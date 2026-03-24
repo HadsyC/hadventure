@@ -992,6 +992,8 @@ def main() -> None:
 
     csv_files = build_tables()
     OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
+    GSHEET_DIR = PROJECT_ROOT / "raw_files" / "gsheets"
+    GSHEET_DIR.mkdir(parents=True, exist_ok=True)
 
     rendered_csv: dict[str, str] = {}
 
@@ -1000,6 +1002,12 @@ def main() -> None:
             content = create_csv_content(headers, rows)
             rendered_csv[filename] = content
             zf.writestr(filename, content)
+
+    # Save canonical CSVs to raw_files/gsheets/ for import tests and standalone use
+    for filename in ["trips.csv", "cities.csv"]:
+        if filename in rendered_csv:
+            output_path = GSHEET_DIR / filename
+            output_path.write_text(rendered_csv[filename], encoding="utf-8")
 
     with TABLE_DUMP_PATH.open("w", encoding="utf-8") as dump:
         dump.write("hadventure generated CSV table dump\n")

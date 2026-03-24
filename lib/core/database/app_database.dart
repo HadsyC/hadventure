@@ -18,6 +18,8 @@ part 'app_database.g.dart';
     Trains,
     PackingItems,
     TripTips,
+    CitySummaries,
+    Foods,
     Locations,
   ],
 )
@@ -37,19 +39,27 @@ class AppDatabase extends _$AppDatabase {
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) async {
+      await m.createAll();
+    },
     onUpgrade: (m, from, to) async {
+      // Beta contract: keep a single canonical schema and rebuild on upgrades.
       await _wipeAndRecreateSchema(m);
+    },
+    beforeOpen: (details) async {
+      await customStatement('PRAGMA foreign_keys = ON');
     },
   );
 
   Future<void> _wipeAndRecreateSchema(Migrator m) async {
-    // Legacy local databases may have incompatible versions; rebuild from scratch.
     await customStatement('PRAGMA foreign_keys = OFF');
 
     const tableNames = <String>[
       'contacts',
       'packing_items',
       'trip_tips',
+      'city_summaries',
+      'foods',
       'itinerary',
       'hotels',
       'flights',

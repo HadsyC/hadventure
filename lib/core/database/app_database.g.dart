@@ -6597,6 +6597,995 @@ class TripTipsCompanion extends UpdateCompanion<TripTip> {
   }
 }
 
+class $CitySummariesTable extends CitySummaries
+    with TableInfo<$CitySummariesTable, CitySummary> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CitySummariesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _tripIdMeta = const VerificationMeta('tripId');
+  @override
+  late final GeneratedColumn<int> tripId = GeneratedColumn<int>(
+    'trip_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES trips (id)',
+    ),
+  );
+  static const VerificationMeta _cityIdMeta = const VerificationMeta('cityId');
+  @override
+  late final GeneratedColumn<int> cityId = GeneratedColumn<int>(
+    'city_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES cities (id)',
+    ),
+  );
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _summaryTextMeta = const VerificationMeta(
+    'summaryText',
+  );
+  @override
+  late final GeneratedColumn<String> summaryText = GeneratedColumn<String>(
+    'summary_text',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceLanguageMeta = const VerificationMeta(
+    'sourceLanguage',
+  );
+  @override
+  late final GeneratedColumn<String> sourceLanguage = GeneratedColumn<String>(
+    'source_language',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    tripId,
+    cityId,
+    id,
+    summaryText,
+    sourceLanguage,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'city_summaries';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CitySummary> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('trip_id')) {
+      context.handle(
+        _tripIdMeta,
+        tripId.isAcceptableOrUnknown(data['trip_id']!, _tripIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tripIdMeta);
+    }
+    if (data.containsKey('city_id')) {
+      context.handle(
+        _cityIdMeta,
+        cityId.isAcceptableOrUnknown(data['city_id']!, _cityIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_cityIdMeta);
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('summary_text')) {
+      context.handle(
+        _summaryTextMeta,
+        summaryText.isAcceptableOrUnknown(
+          data['summary_text']!,
+          _summaryTextMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_summaryTextMeta);
+    }
+    if (data.containsKey('source_language')) {
+      context.handle(
+        _sourceLanguageMeta,
+        sourceLanguage.isAcceptableOrUnknown(
+          data['source_language']!,
+          _sourceLanguageMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CitySummary map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CitySummary(
+      tripId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}trip_id'],
+      )!,
+      cityId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}city_id'],
+      )!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      summaryText: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}summary_text'],
+      )!,
+      sourceLanguage: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_language'],
+      ),
+    );
+  }
+
+  @override
+  $CitySummariesTable createAlias(String alias) {
+    return $CitySummariesTable(attachedDatabase, alias);
+  }
+}
+
+class CitySummary extends DataClass implements Insertable<CitySummary> {
+  final int tripId;
+  final int cityId;
+  final int id;
+  final String summaryText;
+  final String? sourceLanguage;
+  const CitySummary({
+    required this.tripId,
+    required this.cityId,
+    required this.id,
+    required this.summaryText,
+    this.sourceLanguage,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['trip_id'] = Variable<int>(tripId);
+    map['city_id'] = Variable<int>(cityId);
+    map['id'] = Variable<int>(id);
+    map['summary_text'] = Variable<String>(summaryText);
+    if (!nullToAbsent || sourceLanguage != null) {
+      map['source_language'] = Variable<String>(sourceLanguage);
+    }
+    return map;
+  }
+
+  CitySummariesCompanion toCompanion(bool nullToAbsent) {
+    return CitySummariesCompanion(
+      tripId: Value(tripId),
+      cityId: Value(cityId),
+      id: Value(id),
+      summaryText: Value(summaryText),
+      sourceLanguage: sourceLanguage == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceLanguage),
+    );
+  }
+
+  factory CitySummary.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CitySummary(
+      tripId: serializer.fromJson<int>(json['tripId']),
+      cityId: serializer.fromJson<int>(json['cityId']),
+      id: serializer.fromJson<int>(json['id']),
+      summaryText: serializer.fromJson<String>(json['summaryText']),
+      sourceLanguage: serializer.fromJson<String?>(json['sourceLanguage']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'tripId': serializer.toJson<int>(tripId),
+      'cityId': serializer.toJson<int>(cityId),
+      'id': serializer.toJson<int>(id),
+      'summaryText': serializer.toJson<String>(summaryText),
+      'sourceLanguage': serializer.toJson<String?>(sourceLanguage),
+    };
+  }
+
+  CitySummary copyWith({
+    int? tripId,
+    int? cityId,
+    int? id,
+    String? summaryText,
+    Value<String?> sourceLanguage = const Value.absent(),
+  }) => CitySummary(
+    tripId: tripId ?? this.tripId,
+    cityId: cityId ?? this.cityId,
+    id: id ?? this.id,
+    summaryText: summaryText ?? this.summaryText,
+    sourceLanguage: sourceLanguage.present
+        ? sourceLanguage.value
+        : this.sourceLanguage,
+  );
+  CitySummary copyWithCompanion(CitySummariesCompanion data) {
+    return CitySummary(
+      tripId: data.tripId.present ? data.tripId.value : this.tripId,
+      cityId: data.cityId.present ? data.cityId.value : this.cityId,
+      id: data.id.present ? data.id.value : this.id,
+      summaryText: data.summaryText.present
+          ? data.summaryText.value
+          : this.summaryText,
+      sourceLanguage: data.sourceLanguage.present
+          ? data.sourceLanguage.value
+          : this.sourceLanguage,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CitySummary(')
+          ..write('tripId: $tripId, ')
+          ..write('cityId: $cityId, ')
+          ..write('id: $id, ')
+          ..write('summaryText: $summaryText, ')
+          ..write('sourceLanguage: $sourceLanguage')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(tripId, cityId, id, summaryText, sourceLanguage);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CitySummary &&
+          other.tripId == this.tripId &&
+          other.cityId == this.cityId &&
+          other.id == this.id &&
+          other.summaryText == this.summaryText &&
+          other.sourceLanguage == this.sourceLanguage);
+}
+
+class CitySummariesCompanion extends UpdateCompanion<CitySummary> {
+  final Value<int> tripId;
+  final Value<int> cityId;
+  final Value<int> id;
+  final Value<String> summaryText;
+  final Value<String?> sourceLanguage;
+  const CitySummariesCompanion({
+    this.tripId = const Value.absent(),
+    this.cityId = const Value.absent(),
+    this.id = const Value.absent(),
+    this.summaryText = const Value.absent(),
+    this.sourceLanguage = const Value.absent(),
+  });
+  CitySummariesCompanion.insert({
+    required int tripId,
+    required int cityId,
+    this.id = const Value.absent(),
+    required String summaryText,
+    this.sourceLanguage = const Value.absent(),
+  }) : tripId = Value(tripId),
+       cityId = Value(cityId),
+       summaryText = Value(summaryText);
+  static Insertable<CitySummary> custom({
+    Expression<int>? tripId,
+    Expression<int>? cityId,
+    Expression<int>? id,
+    Expression<String>? summaryText,
+    Expression<String>? sourceLanguage,
+  }) {
+    return RawValuesInsertable({
+      if (tripId != null) 'trip_id': tripId,
+      if (cityId != null) 'city_id': cityId,
+      if (id != null) 'id': id,
+      if (summaryText != null) 'summary_text': summaryText,
+      if (sourceLanguage != null) 'source_language': sourceLanguage,
+    });
+  }
+
+  CitySummariesCompanion copyWith({
+    Value<int>? tripId,
+    Value<int>? cityId,
+    Value<int>? id,
+    Value<String>? summaryText,
+    Value<String?>? sourceLanguage,
+  }) {
+    return CitySummariesCompanion(
+      tripId: tripId ?? this.tripId,
+      cityId: cityId ?? this.cityId,
+      id: id ?? this.id,
+      summaryText: summaryText ?? this.summaryText,
+      sourceLanguage: sourceLanguage ?? this.sourceLanguage,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (tripId.present) {
+      map['trip_id'] = Variable<int>(tripId.value);
+    }
+    if (cityId.present) {
+      map['city_id'] = Variable<int>(cityId.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (summaryText.present) {
+      map['summary_text'] = Variable<String>(summaryText.value);
+    }
+    if (sourceLanguage.present) {
+      map['source_language'] = Variable<String>(sourceLanguage.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CitySummariesCompanion(')
+          ..write('tripId: $tripId, ')
+          ..write('cityId: $cityId, ')
+          ..write('id: $id, ')
+          ..write('summaryText: $summaryText, ')
+          ..write('sourceLanguage: $sourceLanguage')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $FoodsTable extends Foods with TableInfo<$FoodsTable, Food> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $FoodsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _tripIdMeta = const VerificationMeta('tripId');
+  @override
+  late final GeneratedColumn<int> tripId = GeneratedColumn<int>(
+    'trip_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES trips (id)',
+    ),
+  );
+  static const VerificationMeta _cityIdMeta = const VerificationMeta('cityId');
+  @override
+  late final GeneratedColumn<int> cityId = GeneratedColumn<int>(
+    'city_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES cities (id)',
+    ),
+  );
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _categoryMeta = const VerificationMeta(
+    'category',
+  );
+  @override
+  late final GeneratedColumn<String> category = GeneratedColumn<String>(
+    'category',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _amapUrlMeta = const VerificationMeta(
+    'amapUrl',
+  );
+  @override
+  late final GeneratedColumn<String> amapUrl = GeneratedColumn<String>(
+    'amap_url',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _avgPriceCnyMeta = const VerificationMeta(
+    'avgPriceCny',
+  );
+  @override
+  late final GeneratedColumn<double> avgPriceCny = GeneratedColumn<double>(
+    'avg_price_cny',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _avgPriceEurMeta = const VerificationMeta(
+    'avgPriceEur',
+  );
+  @override
+  late final GeneratedColumn<double> avgPriceEur = GeneratedColumn<double>(
+    'avg_price_eur',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _recommendedDishesMeta = const VerificationMeta(
+    'recommendedDishes',
+  );
+  @override
+  late final GeneratedColumn<String> recommendedDishes =
+      GeneratedColumn<String>(
+        'recommended_dishes',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    tripId,
+    cityId,
+    id,
+    name,
+    category,
+    amapUrl,
+    avgPriceCny,
+    avgPriceEur,
+    recommendedDishes,
+    notes,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'foods';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Food> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('trip_id')) {
+      context.handle(
+        _tripIdMeta,
+        tripId.isAcceptableOrUnknown(data['trip_id']!, _tripIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tripIdMeta);
+    }
+    if (data.containsKey('city_id')) {
+      context.handle(
+        _cityIdMeta,
+        cityId.isAcceptableOrUnknown(data['city_id']!, _cityIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_cityIdMeta);
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('category')) {
+      context.handle(
+        _categoryMeta,
+        category.isAcceptableOrUnknown(data['category']!, _categoryMeta),
+      );
+    }
+    if (data.containsKey('amap_url')) {
+      context.handle(
+        _amapUrlMeta,
+        amapUrl.isAcceptableOrUnknown(data['amap_url']!, _amapUrlMeta),
+      );
+    }
+    if (data.containsKey('avg_price_cny')) {
+      context.handle(
+        _avgPriceCnyMeta,
+        avgPriceCny.isAcceptableOrUnknown(
+          data['avg_price_cny']!,
+          _avgPriceCnyMeta,
+        ),
+      );
+    }
+    if (data.containsKey('avg_price_eur')) {
+      context.handle(
+        _avgPriceEurMeta,
+        avgPriceEur.isAcceptableOrUnknown(
+          data['avg_price_eur']!,
+          _avgPriceEurMeta,
+        ),
+      );
+    }
+    if (data.containsKey('recommended_dishes')) {
+      context.handle(
+        _recommendedDishesMeta,
+        recommendedDishes.isAcceptableOrUnknown(
+          data['recommended_dishes']!,
+          _recommendedDishesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Food map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Food(
+      tripId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}trip_id'],
+      )!,
+      cityId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}city_id'],
+      )!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      category: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category'],
+      ),
+      amapUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}amap_url'],
+      ),
+      avgPriceCny: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}avg_price_cny'],
+      ),
+      avgPriceEur: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}avg_price_eur'],
+      ),
+      recommendedDishes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}recommended_dishes'],
+      ),
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
+    );
+  }
+
+  @override
+  $FoodsTable createAlias(String alias) {
+    return $FoodsTable(attachedDatabase, alias);
+  }
+}
+
+class Food extends DataClass implements Insertable<Food> {
+  final int tripId;
+  final int cityId;
+  final int id;
+  final String name;
+  final String? category;
+  final String? amapUrl;
+  final double? avgPriceCny;
+  final double? avgPriceEur;
+  final String? recommendedDishes;
+  final String? notes;
+  const Food({
+    required this.tripId,
+    required this.cityId,
+    required this.id,
+    required this.name,
+    this.category,
+    this.amapUrl,
+    this.avgPriceCny,
+    this.avgPriceEur,
+    this.recommendedDishes,
+    this.notes,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['trip_id'] = Variable<int>(tripId);
+    map['city_id'] = Variable<int>(cityId);
+    map['id'] = Variable<int>(id);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || category != null) {
+      map['category'] = Variable<String>(category);
+    }
+    if (!nullToAbsent || amapUrl != null) {
+      map['amap_url'] = Variable<String>(amapUrl);
+    }
+    if (!nullToAbsent || avgPriceCny != null) {
+      map['avg_price_cny'] = Variable<double>(avgPriceCny);
+    }
+    if (!nullToAbsent || avgPriceEur != null) {
+      map['avg_price_eur'] = Variable<double>(avgPriceEur);
+    }
+    if (!nullToAbsent || recommendedDishes != null) {
+      map['recommended_dishes'] = Variable<String>(recommendedDishes);
+    }
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    return map;
+  }
+
+  FoodsCompanion toCompanion(bool nullToAbsent) {
+    return FoodsCompanion(
+      tripId: Value(tripId),
+      cityId: Value(cityId),
+      id: Value(id),
+      name: Value(name),
+      category: category == null && nullToAbsent
+          ? const Value.absent()
+          : Value(category),
+      amapUrl: amapUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(amapUrl),
+      avgPriceCny: avgPriceCny == null && nullToAbsent
+          ? const Value.absent()
+          : Value(avgPriceCny),
+      avgPriceEur: avgPriceEur == null && nullToAbsent
+          ? const Value.absent()
+          : Value(avgPriceEur),
+      recommendedDishes: recommendedDishes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(recommendedDishes),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
+    );
+  }
+
+  factory Food.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Food(
+      tripId: serializer.fromJson<int>(json['tripId']),
+      cityId: serializer.fromJson<int>(json['cityId']),
+      id: serializer.fromJson<int>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      category: serializer.fromJson<String?>(json['category']),
+      amapUrl: serializer.fromJson<String?>(json['amapUrl']),
+      avgPriceCny: serializer.fromJson<double?>(json['avgPriceCny']),
+      avgPriceEur: serializer.fromJson<double?>(json['avgPriceEur']),
+      recommendedDishes: serializer.fromJson<String?>(
+        json['recommendedDishes'],
+      ),
+      notes: serializer.fromJson<String?>(json['notes']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'tripId': serializer.toJson<int>(tripId),
+      'cityId': serializer.toJson<int>(cityId),
+      'id': serializer.toJson<int>(id),
+      'name': serializer.toJson<String>(name),
+      'category': serializer.toJson<String?>(category),
+      'amapUrl': serializer.toJson<String?>(amapUrl),
+      'avgPriceCny': serializer.toJson<double?>(avgPriceCny),
+      'avgPriceEur': serializer.toJson<double?>(avgPriceEur),
+      'recommendedDishes': serializer.toJson<String?>(recommendedDishes),
+      'notes': serializer.toJson<String?>(notes),
+    };
+  }
+
+  Food copyWith({
+    int? tripId,
+    int? cityId,
+    int? id,
+    String? name,
+    Value<String?> category = const Value.absent(),
+    Value<String?> amapUrl = const Value.absent(),
+    Value<double?> avgPriceCny = const Value.absent(),
+    Value<double?> avgPriceEur = const Value.absent(),
+    Value<String?> recommendedDishes = const Value.absent(),
+    Value<String?> notes = const Value.absent(),
+  }) => Food(
+    tripId: tripId ?? this.tripId,
+    cityId: cityId ?? this.cityId,
+    id: id ?? this.id,
+    name: name ?? this.name,
+    category: category.present ? category.value : this.category,
+    amapUrl: amapUrl.present ? amapUrl.value : this.amapUrl,
+    avgPriceCny: avgPriceCny.present ? avgPriceCny.value : this.avgPriceCny,
+    avgPriceEur: avgPriceEur.present ? avgPriceEur.value : this.avgPriceEur,
+    recommendedDishes: recommendedDishes.present
+        ? recommendedDishes.value
+        : this.recommendedDishes,
+    notes: notes.present ? notes.value : this.notes,
+  );
+  Food copyWithCompanion(FoodsCompanion data) {
+    return Food(
+      tripId: data.tripId.present ? data.tripId.value : this.tripId,
+      cityId: data.cityId.present ? data.cityId.value : this.cityId,
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      category: data.category.present ? data.category.value : this.category,
+      amapUrl: data.amapUrl.present ? data.amapUrl.value : this.amapUrl,
+      avgPriceCny: data.avgPriceCny.present
+          ? data.avgPriceCny.value
+          : this.avgPriceCny,
+      avgPriceEur: data.avgPriceEur.present
+          ? data.avgPriceEur.value
+          : this.avgPriceEur,
+      recommendedDishes: data.recommendedDishes.present
+          ? data.recommendedDishes.value
+          : this.recommendedDishes,
+      notes: data.notes.present ? data.notes.value : this.notes,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Food(')
+          ..write('tripId: $tripId, ')
+          ..write('cityId: $cityId, ')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('category: $category, ')
+          ..write('amapUrl: $amapUrl, ')
+          ..write('avgPriceCny: $avgPriceCny, ')
+          ..write('avgPriceEur: $avgPriceEur, ')
+          ..write('recommendedDishes: $recommendedDishes, ')
+          ..write('notes: $notes')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    tripId,
+    cityId,
+    id,
+    name,
+    category,
+    amapUrl,
+    avgPriceCny,
+    avgPriceEur,
+    recommendedDishes,
+    notes,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Food &&
+          other.tripId == this.tripId &&
+          other.cityId == this.cityId &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.category == this.category &&
+          other.amapUrl == this.amapUrl &&
+          other.avgPriceCny == this.avgPriceCny &&
+          other.avgPriceEur == this.avgPriceEur &&
+          other.recommendedDishes == this.recommendedDishes &&
+          other.notes == this.notes);
+}
+
+class FoodsCompanion extends UpdateCompanion<Food> {
+  final Value<int> tripId;
+  final Value<int> cityId;
+  final Value<int> id;
+  final Value<String> name;
+  final Value<String?> category;
+  final Value<String?> amapUrl;
+  final Value<double?> avgPriceCny;
+  final Value<double?> avgPriceEur;
+  final Value<String?> recommendedDishes;
+  final Value<String?> notes;
+  const FoodsCompanion({
+    this.tripId = const Value.absent(),
+    this.cityId = const Value.absent(),
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.category = const Value.absent(),
+    this.amapUrl = const Value.absent(),
+    this.avgPriceCny = const Value.absent(),
+    this.avgPriceEur = const Value.absent(),
+    this.recommendedDishes = const Value.absent(),
+    this.notes = const Value.absent(),
+  });
+  FoodsCompanion.insert({
+    required int tripId,
+    required int cityId,
+    this.id = const Value.absent(),
+    required String name,
+    this.category = const Value.absent(),
+    this.amapUrl = const Value.absent(),
+    this.avgPriceCny = const Value.absent(),
+    this.avgPriceEur = const Value.absent(),
+    this.recommendedDishes = const Value.absent(),
+    this.notes = const Value.absent(),
+  }) : tripId = Value(tripId),
+       cityId = Value(cityId),
+       name = Value(name);
+  static Insertable<Food> custom({
+    Expression<int>? tripId,
+    Expression<int>? cityId,
+    Expression<int>? id,
+    Expression<String>? name,
+    Expression<String>? category,
+    Expression<String>? amapUrl,
+    Expression<double>? avgPriceCny,
+    Expression<double>? avgPriceEur,
+    Expression<String>? recommendedDishes,
+    Expression<String>? notes,
+  }) {
+    return RawValuesInsertable({
+      if (tripId != null) 'trip_id': tripId,
+      if (cityId != null) 'city_id': cityId,
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (category != null) 'category': category,
+      if (amapUrl != null) 'amap_url': amapUrl,
+      if (avgPriceCny != null) 'avg_price_cny': avgPriceCny,
+      if (avgPriceEur != null) 'avg_price_eur': avgPriceEur,
+      if (recommendedDishes != null) 'recommended_dishes': recommendedDishes,
+      if (notes != null) 'notes': notes,
+    });
+  }
+
+  FoodsCompanion copyWith({
+    Value<int>? tripId,
+    Value<int>? cityId,
+    Value<int>? id,
+    Value<String>? name,
+    Value<String?>? category,
+    Value<String?>? amapUrl,
+    Value<double?>? avgPriceCny,
+    Value<double?>? avgPriceEur,
+    Value<String?>? recommendedDishes,
+    Value<String?>? notes,
+  }) {
+    return FoodsCompanion(
+      tripId: tripId ?? this.tripId,
+      cityId: cityId ?? this.cityId,
+      id: id ?? this.id,
+      name: name ?? this.name,
+      category: category ?? this.category,
+      amapUrl: amapUrl ?? this.amapUrl,
+      avgPriceCny: avgPriceCny ?? this.avgPriceCny,
+      avgPriceEur: avgPriceEur ?? this.avgPriceEur,
+      recommendedDishes: recommendedDishes ?? this.recommendedDishes,
+      notes: notes ?? this.notes,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (tripId.present) {
+      map['trip_id'] = Variable<int>(tripId.value);
+    }
+    if (cityId.present) {
+      map['city_id'] = Variable<int>(cityId.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (category.present) {
+      map['category'] = Variable<String>(category.value);
+    }
+    if (amapUrl.present) {
+      map['amap_url'] = Variable<String>(amapUrl.value);
+    }
+    if (avgPriceCny.present) {
+      map['avg_price_cny'] = Variable<double>(avgPriceCny.value);
+    }
+    if (avgPriceEur.present) {
+      map['avg_price_eur'] = Variable<double>(avgPriceEur.value);
+    }
+    if (recommendedDishes.present) {
+      map['recommended_dishes'] = Variable<String>(recommendedDishes.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FoodsCompanion(')
+          ..write('tripId: $tripId, ')
+          ..write('cityId: $cityId, ')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('category: $category, ')
+          ..write('amapUrl: $amapUrl, ')
+          ..write('avgPriceCny: $avgPriceCny, ')
+          ..write('avgPriceEur: $avgPriceEur, ')
+          ..write('recommendedDishes: $recommendedDishes, ')
+          ..write('notes: $notes')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $LocationsTable extends Locations
     with TableInfo<$LocationsTable, Location> {
   @override
@@ -7547,6 +8536,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ItineraryTable itinerary = $ItineraryTable(this);
   late final $PackingItemsTable packingItems = $PackingItemsTable(this);
   late final $TripTipsTable tripTips = $TripTipsTable(this);
+  late final $CitySummariesTable citySummaries = $CitySummariesTable(this);
+  late final $FoodsTable foods = $FoodsTable(this);
   late final $LocationsTable locations = $LocationsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -7562,6 +8553,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     itinerary,
     packingItems,
     tripTips,
+    citySummaries,
+    foods,
     locations,
   ];
 }
@@ -7701,6 +8694,43 @@ final class $$TripsTableReferences
     ).filter((f) => f.tripId.id.sqlEquals($_itemColumn<int>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_tripTipsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$CitySummariesTable, List<CitySummary>>
+  _citySummariesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.citySummaries,
+    aliasName: $_aliasNameGenerator(db.trips.id, db.citySummaries.tripId),
+  );
+
+  $$CitySummariesTableProcessedTableManager get citySummariesRefs {
+    final manager = $$CitySummariesTableTableManager(
+      $_db,
+      $_db.citySummaries,
+    ).filter((f) => f.tripId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_citySummariesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$FoodsTable, List<Food>> _foodsRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.foods,
+    aliasName: $_aliasNameGenerator(db.trips.id, db.foods.tripId),
+  );
+
+  $$FoodsTableProcessedTableManager get foodsRefs {
+    final manager = $$FoodsTableTableManager(
+      $_db,
+      $_db.foods,
+    ).filter((f) => f.tripId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_foodsRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -7914,6 +8944,56 @@ class $$TripsTableFilterComposer extends Composer<_$AppDatabase, $TripsTable> {
           }) => $$TripTipsTableFilterComposer(
             $db: $db,
             $table: $db.tripTips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> citySummariesRefs(
+    Expression<bool> Function($$CitySummariesTableFilterComposer f) f,
+  ) {
+    final $$CitySummariesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.citySummaries,
+      getReferencedColumn: (t) => t.tripId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CitySummariesTableFilterComposer(
+            $db: $db,
+            $table: $db.citySummaries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> foodsRefs(
+    Expression<bool> Function($$FoodsTableFilterComposer f) f,
+  ) {
+    final $$FoodsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.foods,
+      getReferencedColumn: (t) => t.tripId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$FoodsTableFilterComposer(
+            $db: $db,
+            $table: $db.foods,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -8184,6 +9264,56 @@ class $$TripsTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> citySummariesRefs<T extends Object>(
+    Expression<T> Function($$CitySummariesTableAnnotationComposer a) f,
+  ) {
+    final $$CitySummariesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.citySummaries,
+      getReferencedColumn: (t) => t.tripId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CitySummariesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.citySummaries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> foodsRefs<T extends Object>(
+    Expression<T> Function($$FoodsTableAnnotationComposer a) f,
+  ) {
+    final $$FoodsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.foods,
+      getReferencedColumn: (t) => t.tripId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$FoodsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.foods,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<T> locationsRefs<T extends Object>(
     Expression<T> Function($$LocationsTableAnnotationComposer a) f,
   ) {
@@ -8230,6 +9360,8 @@ class $$TripsTableTableManager
             bool trainsRefs,
             bool packingItemsRefs,
             bool tripTipsRefs,
+            bool citySummariesRefs,
+            bool foodsRefs,
             bool locationsRefs,
           })
         > {
@@ -8298,6 +9430,8 @@ class $$TripsTableTableManager
                 trainsRefs = false,
                 packingItemsRefs = false,
                 tripTipsRefs = false,
+                citySummariesRefs = false,
+                foodsRefs = false,
                 locationsRefs = false,
               }) {
                 return PrefetchHooks(
@@ -8309,6 +9443,8 @@ class $$TripsTableTableManager
                     if (trainsRefs) db.trains,
                     if (packingItemsRefs) db.packingItems,
                     if (tripTipsRefs) db.tripTips,
+                    if (citySummariesRefs) db.citySummaries,
+                    if (foodsRefs) db.foods,
                     if (locationsRefs) db.locations,
                   ],
                   addJoins: null,
@@ -8408,6 +9544,40 @@ class $$TripsTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (citySummariesRefs)
+                        await $_getPrefetchedData<
+                          Trip,
+                          $TripsTable,
+                          CitySummary
+                        >(
+                          currentTable: table,
+                          referencedTable: $$TripsTableReferences
+                              ._citySummariesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$TripsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).citySummariesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.tripId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (foodsRefs)
+                        await $_getPrefetchedData<Trip, $TripsTable, Food>(
+                          currentTable: table,
+                          referencedTable: $$TripsTableReferences
+                              ._foodsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$TripsTableReferences(db, table, p0).foodsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.tripId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                       if (locationsRefs)
                         await $_getPrefetchedData<Trip, $TripsTable, Location>(
                           currentTable: table,
@@ -8452,6 +9622,8 @@ typedef $$TripsTableProcessedTableManager =
         bool trainsRefs,
         bool packingItemsRefs,
         bool tripTipsRefs,
+        bool citySummariesRefs,
+        bool foodsRefs,
         bool locationsRefs,
       })
     >;
@@ -8909,6 +10081,43 @@ final class $$CitiesTableReferences
     );
   }
 
+  static MultiTypedResultKey<$CitySummariesTable, List<CitySummary>>
+  _citySummariesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.citySummaries,
+    aliasName: $_aliasNameGenerator(db.cities.id, db.citySummaries.cityId),
+  );
+
+  $$CitySummariesTableProcessedTableManager get citySummariesRefs {
+    final manager = $$CitySummariesTableTableManager(
+      $_db,
+      $_db.citySummaries,
+    ).filter((f) => f.cityId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_citySummariesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$FoodsTable, List<Food>> _foodsRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.foods,
+    aliasName: $_aliasNameGenerator(db.cities.id, db.foods.cityId),
+  );
+
+  $$FoodsTableProcessedTableManager get foodsRefs {
+    final manager = $$FoodsTableTableManager(
+      $_db,
+      $_db.foods,
+    ).filter((f) => f.cityId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_foodsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
   static MultiTypedResultKey<$LocationsTable, List<Location>>
   _locationsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.locations,
@@ -9071,6 +10280,56 @@ class $$CitiesTableFilterComposer
           }) => $$TripTipsTableFilterComposer(
             $db: $db,
             $table: $db.tripTips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> citySummariesRefs(
+    Expression<bool> Function($$CitySummariesTableFilterComposer f) f,
+  ) {
+    final $$CitySummariesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.citySummaries,
+      getReferencedColumn: (t) => t.cityId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CitySummariesTableFilterComposer(
+            $db: $db,
+            $table: $db.citySummaries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> foodsRefs(
+    Expression<bool> Function($$FoodsTableFilterComposer f) f,
+  ) {
+    final $$FoodsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.foods,
+      getReferencedColumn: (t) => t.cityId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$FoodsTableFilterComposer(
+            $db: $db,
+            $table: $db.foods,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -9322,6 +10581,56 @@ class $$CitiesTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> citySummariesRefs<T extends Object>(
+    Expression<T> Function($$CitySummariesTableAnnotationComposer a) f,
+  ) {
+    final $$CitySummariesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.citySummaries,
+      getReferencedColumn: (t) => t.cityId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CitySummariesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.citySummaries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> foodsRefs<T extends Object>(
+    Expression<T> Function($$FoodsTableAnnotationComposer a) f,
+  ) {
+    final $$FoodsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.foods,
+      getReferencedColumn: (t) => t.cityId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$FoodsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.foods,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<T> locationsRefs<T extends Object>(
     Expression<T> Function($$LocationsTableAnnotationComposer a) f,
   ) {
@@ -9366,6 +10675,8 @@ class $$CitiesTableTableManager
             bool hotelsRefs,
             bool itineraryRefs,
             bool tripTipsRefs,
+            bool citySummariesRefs,
+            bool foodsRefs,
             bool locationsRefs,
           })
         > {
@@ -9440,6 +10751,8 @@ class $$CitiesTableTableManager
                 hotelsRefs = false,
                 itineraryRefs = false,
                 tripTipsRefs = false,
+                citySummariesRefs = false,
+                foodsRefs = false,
                 locationsRefs = false,
               }) {
                 return PrefetchHooks(
@@ -9448,6 +10761,8 @@ class $$CitiesTableTableManager
                     if (hotelsRefs) db.hotels,
                     if (itineraryRefs) db.itinerary,
                     if (tripTipsRefs) db.tripTips,
+                    if (citySummariesRefs) db.citySummaries,
+                    if (foodsRefs) db.foods,
                     if (locationsRefs) db.locations,
                   ],
                   addJoins:
@@ -9535,6 +10850,40 @@ class $$CitiesTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (citySummariesRefs)
+                        await $_getPrefetchedData<
+                          City,
+                          $CitiesTable,
+                          CitySummary
+                        >(
+                          currentTable: table,
+                          referencedTable: $$CitiesTableReferences
+                              ._citySummariesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$CitiesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).citySummariesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.cityId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (foodsRefs)
+                        await $_getPrefetchedData<City, $CitiesTable, Food>(
+                          currentTable: table,
+                          referencedTable: $$CitiesTableReferences
+                              ._foodsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$CitiesTableReferences(db, table, p0).foodsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.cityId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                       if (locationsRefs)
                         await $_getPrefetchedData<City, $CitiesTable, Location>(
                           currentTable: table,
@@ -9577,6 +10926,8 @@ typedef $$CitiesTableProcessedTableManager =
         bool hotelsRefs,
         bool itineraryRefs,
         bool tripTipsRefs,
+        bool citySummariesRefs,
+        bool foodsRefs,
         bool locationsRefs,
       })
     >;
@@ -13208,6 +14559,909 @@ typedef $$TripTipsTableProcessedTableManager =
       TripTip,
       PrefetchHooks Function({bool tripId, bool cityId})
     >;
+typedef $$CitySummariesTableCreateCompanionBuilder =
+    CitySummariesCompanion Function({
+      required int tripId,
+      required int cityId,
+      Value<int> id,
+      required String summaryText,
+      Value<String?> sourceLanguage,
+    });
+typedef $$CitySummariesTableUpdateCompanionBuilder =
+    CitySummariesCompanion Function({
+      Value<int> tripId,
+      Value<int> cityId,
+      Value<int> id,
+      Value<String> summaryText,
+      Value<String?> sourceLanguage,
+    });
+
+final class $$CitySummariesTableReferences
+    extends BaseReferences<_$AppDatabase, $CitySummariesTable, CitySummary> {
+  $$CitySummariesTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $TripsTable _tripIdTable(_$AppDatabase db) => db.trips.createAlias(
+    $_aliasNameGenerator(db.citySummaries.tripId, db.trips.id),
+  );
+
+  $$TripsTableProcessedTableManager get tripId {
+    final $_column = $_itemColumn<int>('trip_id')!;
+
+    final manager = $$TripsTableTableManager(
+      $_db,
+      $_db.trips,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_tripIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $CitiesTable _cityIdTable(_$AppDatabase db) => db.cities.createAlias(
+    $_aliasNameGenerator(db.citySummaries.cityId, db.cities.id),
+  );
+
+  $$CitiesTableProcessedTableManager get cityId {
+    final $_column = $_itemColumn<int>('city_id')!;
+
+    final manager = $$CitiesTableTableManager(
+      $_db,
+      $_db.cities,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_cityIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$CitySummariesTableFilterComposer
+    extends Composer<_$AppDatabase, $CitySummariesTable> {
+  $$CitySummariesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get summaryText => $composableBuilder(
+    column: $table.summaryText,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceLanguage => $composableBuilder(
+    column: $table.sourceLanguage,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$TripsTableFilterComposer get tripId {
+    final $$TripsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableFilterComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$CitiesTableFilterComposer get cityId {
+    final $$CitiesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.cityId,
+      referencedTable: $db.cities,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CitiesTableFilterComposer(
+            $db: $db,
+            $table: $db.cities,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CitySummariesTableOrderingComposer
+    extends Composer<_$AppDatabase, $CitySummariesTable> {
+  $$CitySummariesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get summaryText => $composableBuilder(
+    column: $table.summaryText,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceLanguage => $composableBuilder(
+    column: $table.sourceLanguage,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$TripsTableOrderingComposer get tripId {
+    final $$TripsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableOrderingComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$CitiesTableOrderingComposer get cityId {
+    final $$CitiesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.cityId,
+      referencedTable: $db.cities,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CitiesTableOrderingComposer(
+            $db: $db,
+            $table: $db.cities,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CitySummariesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CitySummariesTable> {
+  $$CitySummariesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get summaryText => $composableBuilder(
+    column: $table.summaryText,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sourceLanguage => $composableBuilder(
+    column: $table.sourceLanguage,
+    builder: (column) => column,
+  );
+
+  $$TripsTableAnnotationComposer get tripId {
+    final $$TripsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$CitiesTableAnnotationComposer get cityId {
+    final $$CitiesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.cityId,
+      referencedTable: $db.cities,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CitiesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.cities,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CitySummariesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CitySummariesTable,
+          CitySummary,
+          $$CitySummariesTableFilterComposer,
+          $$CitySummariesTableOrderingComposer,
+          $$CitySummariesTableAnnotationComposer,
+          $$CitySummariesTableCreateCompanionBuilder,
+          $$CitySummariesTableUpdateCompanionBuilder,
+          (CitySummary, $$CitySummariesTableReferences),
+          CitySummary,
+          PrefetchHooks Function({bool tripId, bool cityId})
+        > {
+  $$CitySummariesTableTableManager(_$AppDatabase db, $CitySummariesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CitySummariesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CitySummariesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CitySummariesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> tripId = const Value.absent(),
+                Value<int> cityId = const Value.absent(),
+                Value<int> id = const Value.absent(),
+                Value<String> summaryText = const Value.absent(),
+                Value<String?> sourceLanguage = const Value.absent(),
+              }) => CitySummariesCompanion(
+                tripId: tripId,
+                cityId: cityId,
+                id: id,
+                summaryText: summaryText,
+                sourceLanguage: sourceLanguage,
+              ),
+          createCompanionCallback:
+              ({
+                required int tripId,
+                required int cityId,
+                Value<int> id = const Value.absent(),
+                required String summaryText,
+                Value<String?> sourceLanguage = const Value.absent(),
+              }) => CitySummariesCompanion.insert(
+                tripId: tripId,
+                cityId: cityId,
+                id: id,
+                summaryText: summaryText,
+                sourceLanguage: sourceLanguage,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$CitySummariesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({tripId = false, cityId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (tripId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.tripId,
+                                referencedTable: $$CitySummariesTableReferences
+                                    ._tripIdTable(db),
+                                referencedColumn: $$CitySummariesTableReferences
+                                    ._tripIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+                    if (cityId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.cityId,
+                                referencedTable: $$CitySummariesTableReferences
+                                    ._cityIdTable(db),
+                                referencedColumn: $$CitySummariesTableReferences
+                                    ._cityIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$CitySummariesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CitySummariesTable,
+      CitySummary,
+      $$CitySummariesTableFilterComposer,
+      $$CitySummariesTableOrderingComposer,
+      $$CitySummariesTableAnnotationComposer,
+      $$CitySummariesTableCreateCompanionBuilder,
+      $$CitySummariesTableUpdateCompanionBuilder,
+      (CitySummary, $$CitySummariesTableReferences),
+      CitySummary,
+      PrefetchHooks Function({bool tripId, bool cityId})
+    >;
+typedef $$FoodsTableCreateCompanionBuilder =
+    FoodsCompanion Function({
+      required int tripId,
+      required int cityId,
+      Value<int> id,
+      required String name,
+      Value<String?> category,
+      Value<String?> amapUrl,
+      Value<double?> avgPriceCny,
+      Value<double?> avgPriceEur,
+      Value<String?> recommendedDishes,
+      Value<String?> notes,
+    });
+typedef $$FoodsTableUpdateCompanionBuilder =
+    FoodsCompanion Function({
+      Value<int> tripId,
+      Value<int> cityId,
+      Value<int> id,
+      Value<String> name,
+      Value<String?> category,
+      Value<String?> amapUrl,
+      Value<double?> avgPriceCny,
+      Value<double?> avgPriceEur,
+      Value<String?> recommendedDishes,
+      Value<String?> notes,
+    });
+
+final class $$FoodsTableReferences
+    extends BaseReferences<_$AppDatabase, $FoodsTable, Food> {
+  $$FoodsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $TripsTable _tripIdTable(_$AppDatabase db) =>
+      db.trips.createAlias($_aliasNameGenerator(db.foods.tripId, db.trips.id));
+
+  $$TripsTableProcessedTableManager get tripId {
+    final $_column = $_itemColumn<int>('trip_id')!;
+
+    final manager = $$TripsTableTableManager(
+      $_db,
+      $_db.trips,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_tripIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $CitiesTable _cityIdTable(_$AppDatabase db) => db.cities.createAlias(
+    $_aliasNameGenerator(db.foods.cityId, db.cities.id),
+  );
+
+  $$CitiesTableProcessedTableManager get cityId {
+    final $_column = $_itemColumn<int>('city_id')!;
+
+    final manager = $$CitiesTableTableManager(
+      $_db,
+      $_db.cities,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_cityIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$FoodsTableFilterComposer extends Composer<_$AppDatabase, $FoodsTable> {
+  $$FoodsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get amapUrl => $composableBuilder(
+    column: $table.amapUrl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get avgPriceCny => $composableBuilder(
+    column: $table.avgPriceCny,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get avgPriceEur => $composableBuilder(
+    column: $table.avgPriceEur,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get recommendedDishes => $composableBuilder(
+    column: $table.recommendedDishes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$TripsTableFilterComposer get tripId {
+    final $$TripsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableFilterComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$CitiesTableFilterComposer get cityId {
+    final $$CitiesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.cityId,
+      referencedTable: $db.cities,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CitiesTableFilterComposer(
+            $db: $db,
+            $table: $db.cities,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$FoodsTableOrderingComposer
+    extends Composer<_$AppDatabase, $FoodsTable> {
+  $$FoodsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get amapUrl => $composableBuilder(
+    column: $table.amapUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get avgPriceCny => $composableBuilder(
+    column: $table.avgPriceCny,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get avgPriceEur => $composableBuilder(
+    column: $table.avgPriceEur,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get recommendedDishes => $composableBuilder(
+    column: $table.recommendedDishes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$TripsTableOrderingComposer get tripId {
+    final $$TripsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableOrderingComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$CitiesTableOrderingComposer get cityId {
+    final $$CitiesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.cityId,
+      referencedTable: $db.cities,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CitiesTableOrderingComposer(
+            $db: $db,
+            $table: $db.cities,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$FoodsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $FoodsTable> {
+  $$FoodsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get category =>
+      $composableBuilder(column: $table.category, builder: (column) => column);
+
+  GeneratedColumn<String> get amapUrl =>
+      $composableBuilder(column: $table.amapUrl, builder: (column) => column);
+
+  GeneratedColumn<double> get avgPriceCny => $composableBuilder(
+    column: $table.avgPriceCny,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get avgPriceEur => $composableBuilder(
+    column: $table.avgPriceEur,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get recommendedDishes => $composableBuilder(
+    column: $table.recommendedDishes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  $$TripsTableAnnotationComposer get tripId {
+    final $$TripsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$CitiesTableAnnotationComposer get cityId {
+    final $$CitiesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.cityId,
+      referencedTable: $db.cities,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CitiesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.cities,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$FoodsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $FoodsTable,
+          Food,
+          $$FoodsTableFilterComposer,
+          $$FoodsTableOrderingComposer,
+          $$FoodsTableAnnotationComposer,
+          $$FoodsTableCreateCompanionBuilder,
+          $$FoodsTableUpdateCompanionBuilder,
+          (Food, $$FoodsTableReferences),
+          Food,
+          PrefetchHooks Function({bool tripId, bool cityId})
+        > {
+  $$FoodsTableTableManager(_$AppDatabase db, $FoodsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$FoodsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$FoodsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$FoodsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> tripId = const Value.absent(),
+                Value<int> cityId = const Value.absent(),
+                Value<int> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String?> category = const Value.absent(),
+                Value<String?> amapUrl = const Value.absent(),
+                Value<double?> avgPriceCny = const Value.absent(),
+                Value<double?> avgPriceEur = const Value.absent(),
+                Value<String?> recommendedDishes = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+              }) => FoodsCompanion(
+                tripId: tripId,
+                cityId: cityId,
+                id: id,
+                name: name,
+                category: category,
+                amapUrl: amapUrl,
+                avgPriceCny: avgPriceCny,
+                avgPriceEur: avgPriceEur,
+                recommendedDishes: recommendedDishes,
+                notes: notes,
+              ),
+          createCompanionCallback:
+              ({
+                required int tripId,
+                required int cityId,
+                Value<int> id = const Value.absent(),
+                required String name,
+                Value<String?> category = const Value.absent(),
+                Value<String?> amapUrl = const Value.absent(),
+                Value<double?> avgPriceCny = const Value.absent(),
+                Value<double?> avgPriceEur = const Value.absent(),
+                Value<String?> recommendedDishes = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+              }) => FoodsCompanion.insert(
+                tripId: tripId,
+                cityId: cityId,
+                id: id,
+                name: name,
+                category: category,
+                amapUrl: amapUrl,
+                avgPriceCny: avgPriceCny,
+                avgPriceEur: avgPriceEur,
+                recommendedDishes: recommendedDishes,
+                notes: notes,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) =>
+                    (e.readTable(table), $$FoodsTableReferences(db, table, e)),
+              )
+              .toList(),
+          prefetchHooksCallback: ({tripId = false, cityId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (tripId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.tripId,
+                                referencedTable: $$FoodsTableReferences
+                                    ._tripIdTable(db),
+                                referencedColumn: $$FoodsTableReferences
+                                    ._tripIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+                    if (cityId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.cityId,
+                                referencedTable: $$FoodsTableReferences
+                                    ._cityIdTable(db),
+                                referencedColumn: $$FoodsTableReferences
+                                    ._cityIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$FoodsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $FoodsTable,
+      Food,
+      $$FoodsTableFilterComposer,
+      $$FoodsTableOrderingComposer,
+      $$FoodsTableAnnotationComposer,
+      $$FoodsTableCreateCompanionBuilder,
+      $$FoodsTableUpdateCompanionBuilder,
+      (Food, $$FoodsTableReferences),
+      Food,
+      PrefetchHooks Function({bool tripId, bool cityId})
+    >;
 typedef $$LocationsTableCreateCompanionBuilder =
     LocationsCompanion Function({
       required int tripId,
@@ -13861,6 +16115,10 @@ class $AppDatabaseManager {
       $$PackingItemsTableTableManager(_db, _db.packingItems);
   $$TripTipsTableTableManager get tripTips =>
       $$TripTipsTableTableManager(_db, _db.tripTips);
+  $$CitySummariesTableTableManager get citySummaries =>
+      $$CitySummariesTableTableManager(_db, _db.citySummaries);
+  $$FoodsTableTableManager get foods =>
+      $$FoodsTableTableManager(_db, _db.foods);
   $$LocationsTableTableManager get locations =>
       $$LocationsTableTableManager(_db, _db.locations);
 }

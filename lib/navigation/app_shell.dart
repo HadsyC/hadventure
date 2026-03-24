@@ -5,6 +5,9 @@ import '../screens/map/map_screen.dart';
 import '../screens/flights/flights_screen.dart';
 import '../screens/trains/trains_screen.dart';
 import '../screens/hotels/hotels_screen.dart';
+import '../screens/packing/packing_items_screen.dart';
+import '../screens/tips/trip_tips_screen.dart';
+import '../screens/foods/foods_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/data/data_screen.dart';
 
@@ -57,6 +60,9 @@ class _AppShellState extends State<AppShell> {
     FlightsScreen(highlightedFlightId: _selectedFlightId),
     TrainsScreen(highlightedTrainId: _selectedTrainId),
     HotelsScreen(highlightedHotelId: _selectedHotelId),
+    const PackingItemsScreen(),
+    const TripTipsScreen(),
+    const FoodsScreen(),
     const SettingsScreen(),
     const DataScreen(),
   ];
@@ -77,6 +83,21 @@ class _AppShellState extends State<AppShell> {
     (icon: Icons.flight_outlined, selectedIcon: Icons.flight, label: 'Flights'),
     (icon: Icons.train_outlined, selectedIcon: Icons.train, label: 'Trains'),
     (icon: Icons.hotel_outlined, selectedIcon: Icons.hotel, label: 'Hotels'),
+    (
+      icon: Icons.backpack_outlined,
+      selectedIcon: Icons.backpack,
+      label: 'Packing',
+    ),
+    (
+      icon: Icons.tips_and_updates_outlined,
+      selectedIcon: Icons.tips_and_updates,
+      label: 'Tips',
+    ),
+    (
+      icon: Icons.restaurant_outlined,
+      selectedIcon: Icons.restaurant,
+      label: 'Food',
+    ),
     (
       icon: Icons.settings_outlined,
       selectedIcon: Icons.settings,

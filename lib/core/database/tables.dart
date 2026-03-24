@@ -150,6 +150,23 @@ class TripTips extends Table with HasTripId {
   TextColumn get language => text().nullable()();
 }
 
+class CitySummaries extends Table with HasTripId, HasCityId {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get summaryText => text()();
+  TextColumn get sourceLanguage => text().nullable()();
+}
+
+class Foods extends Table with HasTripId, HasCityId {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get name => text()();
+  TextColumn get category => text().nullable()();
+  TextColumn get amapUrl => text().nullable()();
+  RealColumn get avgPriceCny => real().nullable()();
+  RealColumn get avgPriceEur => real().nullable()();
+  TextColumn get recommendedDishes => text().nullable()();
+  TextColumn get notes => text().nullable()();
+}
+
 class Locations extends Table with HasTripId, HasCityId, HasCoordinates {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get name => text()();

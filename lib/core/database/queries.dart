@@ -59,6 +59,15 @@ extension AppQueries on AppDatabase {
         .watch();
   }
 
+  Future<List<CitySummary>> citySummariesForTrip(int tripId) =>
+      (select(citySummaries)..where((s) => s.tripId.equals(tripId))).get();
+
+  Future<List<Food>> foodsForTrip(int tripId) =>
+      (select(foods)
+            ..where((f) => f.tripId.equals(tripId))
+            ..orderBy([(f) => OrderingTerm.asc(f.name)]))
+          .get();
+
   // First trip (for now we work with one trip at a time)
   Future<Trip?> get currentTrip => (select(trips)..limit(1)).getSingleOrNull();
 }

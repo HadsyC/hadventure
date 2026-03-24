@@ -8,6 +8,7 @@ import '../../core/database/app_database.dart';
 import '../../core/database/database_provider.dart';
 import 'import_zip_validator.dart';
 import 'import_schema.dart' as import_schema;
+import 'zip_import_engine.dart';
 import 'package:drift/drift.dart' show Value;
 
 class _ImportPayload {
@@ -49,7 +50,10 @@ class _TableImportSummary {
 }
 
 class DataScreen extends StatefulWidget {
-  const DataScreen({super.key});
+  final Future<File?> Function()? pickZipFile;
+  final Future<ZipParseResult> Function(File file)? parseZipFile;
+
+  const DataScreen({super.key, this.pickZipFile, this.parseZipFile});
 
   @override
   State<DataScreen> createState() => _DataScreenState();
@@ -60,6 +64,7 @@ class _DataScreenState extends State<DataScreen> {
   String? _lastMessage;
   bool _lastSuccess = false;
   List<_TableImportSummary> _lastImportSummary = const [];
+  final ZipImportEngine _importEngine = const ZipImportEngine();
 
   final Map<String, String> _aliasToCanonical = import_schema
       .buildAliasToCanonical();
@@ -67,10 +72,12 @@ class _DataScreenState extends State<DataScreen> {
   static const _importOrder = [
     'trips',
     'cities',
+    'city_summaries',
     'flights',
     'trains',
     'hotels',
     'locations',
+    'foods',
     'itinerary',
     'trip_tips',
     'packing_items',
@@ -109,6 +116,8 @@ class _DataScreenState extends State<DataScreen> {
     await db.delete(db.flights).go();
     await db.delete(db.trains).go();
     await db.delete(db.tripTips).go();
+    await db.delete(db.citySummaries).go();
+    await db.delete(db.foods).go();
     await db.delete(db.packingItems).go();
     await db.delete(db.contacts).go();
     await db.delete(db.locations).go();
@@ -131,18 +140,18 @@ class _DataScreenState extends State<DataScreen> {
       }
     }
 
-    // Backward compatibility for older itinerary exports.
-    if (normalized.contains('city_name') &&
-        (normalized.contains('activity_type') ||
-            normalized.contains('itinerary_type'))) {
-      return 'itinerary';
-    }
-
     return null;
   }
 
   Future<void> _pickAndImport() async {
     final db = DatabaseProvider.of(context);
+
+    if (widget.pickZipFile != null) {
+      final file = await widget.pickZipFile!();
+      if (file == null) return;
+      await _importZipArchive(db, file);
+      return;
+    }
 
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -155,54 +164,32 @@ class _DataScreenState extends State<DataScreen> {
   }
 
   Future<void> _importZipArchive(AppDatabase db, File file) async {
-    final bytes = await file.readAsBytes();
-    final archive = ZipDecoder().decodeBytes(bytes);
-
-    final byTable = <String, _ImportPayload>{};
-    final ignoredFiles = <String>[];
-
-    for (final entry in archive.files) {
-      if (!entry.isFile) continue;
-
-      final normalizedPath = entry.name.replaceAll('\\', '/').toLowerCase();
-      if (!normalizedPath.endsWith('.csv')) continue;
-
-      final baseName = _baseName(normalizedPath);
-      if (normalizedPath.contains('/templates/') ||
-          baseName.endsWith('_template.csv')) {
-        ignoredFiles.add(entry.name);
-        continue;
-      }
-
-      final rawContent = entry.content;
-      final fileBytes = switch (rawContent) {
-        List<int> v => v,
-        String s => utf8.encode(s),
-        _ => null,
-      };
-      if (fileBytes == null) continue;
-
-      final content = utf8.decode(fileBytes, allowMalformed: true);
-      final payload = _parseCsvPayload(content, sourceName: entry.name);
-      if (payload == null) continue;
-
-      byTable[payload.tableName] = payload;
-    }
+    final parsed = widget.parseZipFile != null
+        ? await widget.parseZipFile!(file)
+        : await _importEngine.parseZipFile(file);
+    final byTable = parsed.byTable;
+    final ignoredFiles = parsed.ignoredFiles;
 
     if (byTable.isEmpty) {
       _setMessage(requiredZipFilesHelpMessage(), false);
       return;
     }
 
+    // 3) Fail fast if mandatory core tables are missing.
     final missingRequired = missingRequiredZipTables(byTable.keys);
     if (missingRequired.isNotEmpty) {
       _setMessage(missingRequiredZipFilesMessage(missingRequired), false);
       return;
     }
 
+    // 4) Validate cross-table dependencies before touching DB state.
     final planned = byTable.keys.toSet();
     for (final table in planned) {
-      final missingDep = await _checkDependenciesWithPlanned(table, planned);
+      final missingDep = await _importEngine.checkDependenciesWithPlanned(
+        db: db,
+        tableName: table,
+        plannedTables: planned,
+      );
       if (missingDep != null) {
         _setMessage(
           'Cannot import $table from ZIP — "$missingDep" must be present in DB or ZIP.',
@@ -230,37 +217,25 @@ class _DataScreenState extends State<DataScreen> {
     });
     final tableSummaries = <_TableImportSummary>[];
     try {
-      var totalInserted = 0;
-      var totalRejected = 0;
-      var totalTables = 0;
-      final diagnostics = <String>[];
+      final execution = await _importEngine.importParsed(
+        db: db,
+        byTable: byTable,
+      );
 
-      for (final table in _importOrder) {
-        final payload = byTable[table];
-        if (payload == null) continue;
-        final result = await _importTable(
-          db,
-          table,
-          payload.headers,
-          payload.dataRows,
-        );
-        totalInserted += result.insertedRows;
-        totalRejected += result.rejectedRows;
-        diagnostics.addAll(result.diagnostics);
-        totalTables++;
+      for (final summary in execution.tableSummaries) {
         tableSummaries.add(
           _TableImportSummary(
-            tableName: table,
-            insertedRows: result.insertedRows,
-            rejectedRows: result.rejectedRows,
+            tableName: summary.tableName,
+            insertedRows: summary.insertedRows,
+            rejectedRows: summary.rejectedRows,
           ),
         );
       }
 
-      final diagnosticPreview = diagnostics.take(5).join(' | ');
+      final diagnosticPreview = execution.diagnostics.take(10).join('\n');
       _setMessage(
-        'Imported $totalInserted rows across $totalTables tables. Rejected $totalRejected rows.'
-        '${diagnosticPreview.isEmpty ? '' : ' Details: $diagnosticPreview'}',
+        'Imported ${execution.totalInserted} rows across ${execution.totalTables} tables. Rejected ${execution.totalRejected} rows.'
+        '${diagnosticPreview.isEmpty ? '' : '\n\nFirst rejections:\n$diagnosticPreview'}',
         true,
       );
     } catch (e) {
@@ -279,6 +254,8 @@ class _DataScreenState extends State<DataScreen> {
         return 'Tips & Phrases';
       case 'packing_items':
         return 'Packing List';
+      case 'city_summaries':
+        return 'City Summaries';
       default:
         return tableName
             .split('_')
@@ -333,11 +310,15 @@ class _DataScreenState extends State<DataScreen> {
       'cities',
       'flights',
       'trains',
+      'city_summaries',
+      'foods',
       'packing_items',
       'trip_tips',
       'contacts',
     };
     const needsCityCompat = {'hotels', 'itinerary', 'activities'};
+
+    const needsCity = {'city_summaries', 'foods'};
 
     if (needsTrip.contains(tableName) &&
         !hasTripsInDb &&
@@ -346,6 +327,12 @@ class _DataScreenState extends State<DataScreen> {
     }
 
     if (needsCityCompat.contains(tableName) &&
+        !hasCitiesInDb &&
+        !plannedTables.contains('cities')) {
+      return 'cities';
+    }
+
+    if (needsCity.contains(tableName) &&
         !hasCitiesInDb &&
         !plannedTables.contains('cities')) {
       return 'cities';
@@ -379,23 +366,12 @@ class _DataScreenState extends State<DataScreen> {
     var rejectedRows = 0;
 
     Map<String, dynamic> rowToMap(List<dynamic> row) {
+      // Normalize incoming headers to canonical keys (aliases handled here).
       final map = <String, dynamic>{};
       for (int i = 0; i < headers.length; i++) {
         final normalized = import_schema.normalizeImportHeader(headers[i]);
         final canonical = _aliasToCanonical[normalized] ?? normalized;
         map[canonical] = i < row.length ? row[i] : null;
-      }
-
-      // Resolve ambiguous IDs based on current table context.
-      if (table == 'flights' &&
-          map['flight_number'] == null &&
-          map['flight_id'] != null) {
-        map['flight_number'] = map['flight_id'];
-      }
-      if (table == 'trains' &&
-          map['train_number'] == null &&
-          map['train_id'] != null) {
-        map['train_number'] = map['train_id'];
       }
 
       return map;
@@ -410,51 +386,11 @@ class _DataScreenState extends State<DataScreen> {
     DateTime? dt(Map m, String k) {
       final v = str(m, k);
       if (v == null) return null;
-
-      DateTime? parseDMY(String input, String separator) {
-        final parts = input.split(separator);
-        if (parts.length != 3) return null;
-        final a = int.tryParse(parts[0]);
-        final b = int.tryParse(parts[1]);
-        final c = int.tryParse(parts[2]);
-        if (a == null || b == null || c == null) return null;
-        if (c < 1900) return null;
-        // Prefer day/month for Notion exports with dots, month/day for slash formats.
-        final monthFirst = separator == '/';
-        final day = monthFirst ? b : a;
-        final month = monthFirst ? a : b;
-        return DateTime.tryParse(
-          '${c.toString().padLeft(4, '0')}-${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}',
-        );
-      }
-
       try {
+        // Important: parser expects ISO-compatible values (for example 2026-04-13).
+        // Non-ISO date strings are treated as invalid and cause row rejection.
         return DateTime.parse(v);
       } catch (_) {
-        final cleaned = v.split('(').first.trim();
-        final normalized = cleaned.replaceAll('→', '-').replaceAll(',', '.');
-
-        final dateAndTime = RegExp(
-          r'^(\d{1,2})[\./](\d{1,2})[\./](\d{4})\s+(\d{1,2}):(\d{2})$',
-        ).firstMatch(normalized);
-        if (dateAndTime != null) {
-          final a = int.parse(dateAndTime.group(1)!);
-          final b = int.parse(dateAndTime.group(2)!);
-          final y = int.parse(dateAndTime.group(3)!);
-          final h = int.parse(dateAndTime.group(4)!);
-          final min = int.parse(dateAndTime.group(5)!);
-          final monthFirst = normalized.contains('/');
-          final day = monthFirst ? b : a;
-          final month = monthFirst ? a : b;
-          return DateTime(y, month, day, h, min);
-        }
-
-        if (normalized.contains('/')) {
-          return parseDMY(normalized, '/');
-        }
-        if (normalized.contains('.')) {
-          return parseDMY(normalized, '.');
-        }
         return null;
       }
     }
@@ -462,7 +398,7 @@ class _DataScreenState extends State<DataScreen> {
     double? dbl(Map m, String k) {
       final v = m[k];
       if (v == null || v.toString().trim().isEmpty) return null;
-      return double.tryParse(v.toString().replaceAll('€', '').trim());
+      return double.tryParse(v.toString().trim());
     }
 
     int? intVal(Map m, String k) {
@@ -506,11 +442,13 @@ class _DataScreenState extends State<DataScreen> {
       final tripId = resolveTripId();
       final cityKey = normalize(canonicalCityName(cityName));
       if (tripId == null || cityKey == null) return null;
+      // City matching is strict against imported city names (after lowercase/trim).
       return cityIdByTripAndName['$tripId|$cityKey'];
     }
 
     Future<void> rejectRow(String reason, int rowIndex) async {
       rejectedRows++;
+      // Keep diagnostics concise in UI; first 20 rejections are enough for triage.
       if (diagnostics.length < 20) {
         diagnostics.add('$table row ${rowIndex + 1}: $reason');
       }
@@ -519,7 +457,6 @@ class _DataScreenState extends State<DataScreen> {
     await db.transaction(() async {
       switch (table) {
         case 'trips':
-          await db.delete(db.trips).go();
           for (var i = 0; i < rows.length; i++) {
             final row = rows[i];
             final m = rowToMap(row);
@@ -546,7 +483,6 @@ class _DataScreenState extends State<DataScreen> {
           break;
 
         case 'cities':
-          await db.delete(db.cities).go();
           for (var i = 0; i < rows.length; i++) {
             final row = rows[i];
             final m = rowToMap(row);
@@ -578,7 +514,6 @@ class _DataScreenState extends State<DataScreen> {
           break;
 
         case 'flights':
-          await db.delete(db.flights).go();
           for (var i = 0; i < rows.length; i++) {
             final row = rows[i];
             final m = rowToMap(row);
@@ -620,7 +555,6 @@ class _DataScreenState extends State<DataScreen> {
           break;
 
         case 'trains':
-          await db.delete(db.trains).go();
           for (var i = 0; i < rows.length; i++) {
             final row = rows[i];
             final m = rowToMap(row);
@@ -662,7 +596,6 @@ class _DataScreenState extends State<DataScreen> {
           break;
 
         case 'hotels':
-          await db.delete(db.hotels).go();
           for (var i = 0; i < rows.length; i++) {
             final row = rows[i];
             final m = rowToMap(row);
@@ -702,7 +635,6 @@ class _DataScreenState extends State<DataScreen> {
           break;
 
         case 'locations':
-          await db.delete(db.locations).go();
           for (var i = 0; i < rows.length; i++) {
             final row = rows[i];
             final m = rowToMap(row);
@@ -747,11 +679,12 @@ class _DataScreenState extends State<DataScreen> {
           break;
 
         case 'itinerary':
-        case 'activities':
-          await db.delete(db.itinerary).go();
           for (var i = 0; i < rows.length; i++) {
             final row = rows[i];
             final m = rowToMap(row);
+
+            // Itinerary row acceptance checklist:
+            // A) city_name must resolve to an imported city in the current trip.
             final cityId = resolveCityId(str(m, 'city_name'));
             if (cityId == null) {
               await rejectRow(
@@ -760,20 +693,15 @@ class _DataScreenState extends State<DataScreen> {
               );
               continue;
             }
+
+            // B) title and date are mandatory for itinerary rows.
             if (str(m, 'title') == null || dt(m, 'date') == null) {
               await rejectRow('Missing itinerary title or date', i);
               continue;
             }
 
-            final addressEn = str(m, 'address_en') ?? str(m, 'location');
-            final addressLocal = str(m, 'address_local');
-            if (addressEn == null || addressLocal == null) {
-              await rejectRow(
-                'Map-ready itinerary row requires address_en and address_local',
-                i,
-              );
-              continue;
-            }
+            final addressEn = str(m, 'address_en');
+            final addressLocal = str(m, 'address_local') ?? addressEn;
 
             await db
                 .into(db.itinerary)
@@ -783,9 +711,7 @@ class _DataScreenState extends State<DataScreen> {
                     date: dt(m, 'date')!,
                     title: str(m, 'title')!,
                     time: Value(str(m, 'time')),
-                    type: Value(
-                      str(m, 'itinerary_type') ?? str(m, 'activity_type'),
-                    ),
+                    type: Value(str(m, 'itinerary_type')),
                     location: Value(str(m, 'location')),
                     addressEn: Value(addressEn),
                     addressLocal: Value(addressLocal),
@@ -804,12 +730,13 @@ class _DataScreenState extends State<DataScreen> {
                     hotelId: Value(intVal(m, 'hotel_id')),
                   ),
                 );
+
+            // If we reach here, this itinerary row was accepted and persisted.
             insertedRows++;
           }
           break;
 
         case 'trip_tips':
-          await db.delete(db.tripTips).go();
           for (var i = 0; i < rows.length; i++) {
             final row = rows[i];
             final m = rowToMap(row);
@@ -841,8 +768,71 @@ class _DataScreenState extends State<DataScreen> {
           }
           break;
 
+        case 'city_summaries':
+          for (var i = 0; i < rows.length; i++) {
+            final row = rows[i];
+            final m = rowToMap(row);
+            final tripId = resolveTripId();
+            final cityId = resolveCityId(str(m, 'city_name'));
+            if (tripId == null || cityId == null) {
+              await rejectRow(
+                'Could not resolve trip or city for city summary row',
+                i,
+              );
+              continue;
+            }
+            if (str(m, 'summary_text') == null) {
+              await rejectRow('Missing summary_text', i);
+              continue;
+            }
+            await db
+                .into(db.citySummaries)
+                .insert(
+                  CitySummariesCompanion.insert(
+                    tripId: tripId,
+                    cityId: cityId,
+                    summaryText: str(m, 'summary_text')!,
+                    sourceLanguage: Value(str(m, 'source_language')),
+                  ),
+                );
+            insertedRows++;
+          }
+          break;
+
+        case 'foods':
+          for (var i = 0; i < rows.length; i++) {
+            final row = rows[i];
+            final m = rowToMap(row);
+            final tripId = resolveTripId();
+            final cityId = resolveCityId(str(m, 'city_name'));
+            if (tripId == null || cityId == null) {
+              await rejectRow('Could not resolve trip or city for food row', i);
+              continue;
+            }
+            if (str(m, 'name') == null) {
+              await rejectRow('Missing food/restaurant name', i);
+              continue;
+            }
+            await db
+                .into(db.foods)
+                .insert(
+                  FoodsCompanion.insert(
+                    tripId: tripId,
+                    cityId: cityId,
+                    name: str(m, 'name')!,
+                    category: Value(str(m, 'category')),
+                    amapUrl: Value(str(m, 'map_url')),
+                    avgPriceCny: Value(dbl(m, 'avg_price_cny')),
+                    avgPriceEur: Value(dbl(m, 'avg_price_eur')),
+                    recommendedDishes: Value(str(m, 'recommended_dishes')),
+                    notes: Value(str(m, 'notes')),
+                  ),
+                );
+            insertedRows++;
+          }
+          break;
+
         case 'packing_items':
-          await db.delete(db.packingItems).go();
           for (var i = 0; i < rows.length; i++) {
             final row = rows[i];
             final m = rowToMap(row);
@@ -872,7 +862,6 @@ class _DataScreenState extends State<DataScreen> {
           break;
 
         case 'contacts':
-          await db.delete(db.contacts).go();
           for (var i = 0; i < rows.length; i++) {
             final row = rows[i];
             final m = rowToMap(row);
@@ -935,10 +924,16 @@ class _DataScreenState extends State<DataScreen> {
     const tables = [
       (name: 'trips', icon: Icons.luggage_outlined, label: 'Trips'),
       (name: 'cities', icon: Icons.location_city_outlined, label: 'Cities'),
+      (
+        name: 'city_summaries',
+        icon: Icons.subject_outlined,
+        label: 'City Summaries',
+      ),
       (name: 'flights', icon: Icons.flight_outlined, label: 'Flights'),
       (name: 'trains', icon: Icons.train_outlined, label: 'Trains'),
       (name: 'hotels', icon: Icons.hotel_outlined, label: 'Hotels'),
       (name: 'locations', icon: Icons.place_outlined, label: 'Locations'),
+      (name: 'foods', icon: Icons.restaurant_outlined, label: 'Foods'),
       (
         name: 'itinerary',
         icon: Icons.local_activity_outlined,
@@ -1141,7 +1136,7 @@ class _DataScreenState extends State<DataScreen> {
 // ── PREVIEW DIALOG ───────────────────────────────────────────────────────────
 
 class _ZipImportPreviewDialog extends StatelessWidget {
-  final Map<String, _ImportPayload> importsByTable;
+  final Map<String, ImportPayload> importsByTable;
   final List<String> ignoredFiles;
 
   const _ZipImportPreviewDialog({
@@ -1156,10 +1151,12 @@ class _ZipImportPreviewDialog extends StatelessWidget {
     final ordered = <String>[
       'trips',
       'cities',
+      'city_summaries',
       'flights',
       'trains',
       'hotels',
       'locations',
+      'foods',
       'itinerary',
       'trip_tips',
       'packing_items',

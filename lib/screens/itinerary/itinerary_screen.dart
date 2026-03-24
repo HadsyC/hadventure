@@ -41,6 +41,8 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
   int? _selectedCityId;
   List<City> _cities = [];
   List<ItineraryData> _itineraries = [];
+  Map<int, String> _citySummariesByCityId = const {};
+  final Set<int> _expandedCitySummaries = <int>{};
   bool _loading = true;
   bool _initialized = false;
 
@@ -80,10 +82,22 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
     }
     final cities = await db.citiesForTrip(trip.id);
     final itineraries = await db.allItinerariesForTrip(trip.id);
+    final summaries = await db.citySummariesForTrip(trip.id);
+
+    final summaryByCity = <int, String>{};
+    for (final summary in summaries) {
+      final existing = summaryByCity[summary.cityId];
+      if (existing == null || existing.isEmpty) {
+        summaryByCity[summary.cityId] = summary.summaryText;
+      } else {
+        summaryByCity[summary.cityId] = '$existing\n\n${summary.summaryText}';
+      }
+    }
 
     setState(() {
       _cities = cities;
       _itineraries = itineraries;
+      _citySummariesByCityId = summaryByCity;
       _loading = false;
     });
     _applyFilterFromWidget();
@@ -602,6 +616,17 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final grouped = _grouped;
+    final sections = grouped.entries.toList();
+
+    bool isFirstSectionForCity(int sectionIndex, int cityId) {
+      for (var i = 0; i < sectionIndex; i++) {
+        final priorEntries = sections[i].value;
+        if (priorEntries.isNotEmpty && priorEntries.first.cityId == cityId) {
+          return false;
+        }
+      }
+      return true;
+    }
 
     return Scaffold(
       body: CustomScrollView(
@@ -685,12 +710,93 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate((context, index) {
-                  final keys = grouped.keys.toList();
-                  final key = keys[index];
-                  final entries = grouped[key]!;
+                  final section = sections[index];
+                  final key = section.key;
+                  final entries = section.value;
+                  final cityId = entries.first.cityId;
+                  final cityName = _cities
+                      .where((c) => c.id == cityId)
+                      .map((c) => c.name)
+                      .firstOrNull;
+                  final citySummary = _citySummariesByCityId[cityId];
+                  final showCitySummary =
+                      citySummary != null &&
+                      citySummary.trim().isNotEmpty &&
+                      isFirstSectionForCity(index, cityId);
+                  final summaryExpanded = _expandedCitySummaries.contains(
+                    cityId,
+                  );
+
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      if (showCitySummary)
+                        Card(
+                          margin: const EdgeInsets.only(top: 8, bottom: 6),
+                          color: colorScheme.surfaceContainerLow,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                InkWell(
+                                  borderRadius: BorderRadius.circular(10),
+                                  onTap: () {
+                                    setState(() {
+                                      if (summaryExpanded) {
+                                        _expandedCitySummaries.remove(cityId);
+                                      } else {
+                                        _expandedCitySummaries.add(cityId);
+                                      }
+                                    });
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 6,
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            '${cityName ?? 'City'} summary',
+                                            style: theme.textTheme.titleSmall
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w700,
+                                                  color: colorScheme.primary,
+                                                ),
+                                          ),
+                                        ),
+                                        Icon(
+                                          summaryExpanded
+                                              ? Icons.expand_less
+                                              : Icons.expand_more,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                if (summaryExpanded)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 8),
+                                    child: MarkdownBody(
+                                      data: citySummary.trim(),
+                                      selectable: true,
+                                      styleSheet: MarkdownStyleSheet.fromTheme(
+                                        theme,
+                                      ).copyWith(p: theme.textTheme.bodyMedium),
+                                      onTapLink: (_, href, _) {
+                                        if (href == null) return;
+                                        _openExternalUrl(href);
+                                      },
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         child: Text(
