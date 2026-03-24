@@ -54,9 +54,7 @@ class _AppShellState extends State<AppShell> {
       ),
     ),
     const MapScreen(),
-    FlightsScreen(
-      highlightedFlightId: _selectedFlightId,
-    ),
+    FlightsScreen(highlightedFlightId: _selectedFlightId),
     TrainsScreen(highlightedTrainId: _selectedTrainId),
     HotelsScreen(highlightedHotelId: _selectedHotelId),
     const SettingsScreen(),
