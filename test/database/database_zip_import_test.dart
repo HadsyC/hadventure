@@ -179,6 +179,86 @@ void main() {
           flightRows.first[flightHeaders.indexOf('flight_number')].toString(),
         ),
       );
+
+      final itineraryHeaders = csvData['itinerary']![0]
+          .map((e) => e.toString())
+          .toList();
+      final itineraryRows = csvData['itinerary']!.skip(1).toList();
+      expect(
+        itineraryRows,
+        isNotEmpty,
+        reason: 'Expected at least one itinerary row',
+      );
+      expect(
+        itineraryHeaders.toSet(),
+        containsAll({
+          'city_name',
+          'date',
+          'title',
+          'address_en',
+          'address_local',
+        }),
+        reason: 'Itinerary CSV missing required import headers',
+      );
+
+      final cityByName = {
+        for (final city in cities) city.name.toLowerCase(): city,
+      };
+
+      var insertedItinerary = 0;
+      for (final row in itineraryRows) {
+        final cityName = row[itineraryHeaders.indexOf('city_name')]
+            .toString()
+            .toLowerCase();
+        final city = cityByName[cityName];
+        expect(city, isNotNull, reason: 'Missing city for itinerary row');
+
+        final title = row[itineraryHeaders.indexOf('title')].toString();
+        final date = DateTime.parse(
+          row[itineraryHeaders.indexOf('date')].toString(),
+        );
+        final addressEn = row[itineraryHeaders.indexOf('address_en')]
+            .toString()
+            .trim();
+        final addressLocal = row[itineraryHeaders.indexOf('address_local')]
+            .toString()
+            .trim();
+
+        expect(addressEn, isNotEmpty, reason: 'address_en should not be empty');
+        expect(
+          addressLocal,
+          isNotEmpty,
+          reason: 'address_local should not be empty',
+        );
+
+        await testDb
+            .into(testDb.itinerary)
+            .insert(
+              ItineraryCompanion.insert(
+                cityId: city!.id,
+                date: date,
+                title: title,
+                time: drift.Value(
+                  row[itineraryHeaders.indexOf('time')]?.toString(),
+                ),
+                type: drift.Value(
+                  row[itineraryHeaders.indexOf('itinerary_type')]?.toString(),
+                ),
+                location: drift.Value(
+                  row[itineraryHeaders.indexOf('location')]?.toString(),
+                ),
+                addressEn: drift.Value(addressEn),
+                addressLocal: drift.Value(addressLocal),
+                mapUrl: drift.Value(
+                  row[itineraryHeaders.indexOf('map_url')]?.toString(),
+                ),
+              ),
+            );
+        insertedItinerary++;
+      }
+
+      final itinerary = await testDb.select(testDb.itinerary).get();
+      expect(itinerary.length, equals(insertedItinerary));
     });
   });
 }

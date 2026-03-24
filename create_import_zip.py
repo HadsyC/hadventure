@@ -684,7 +684,7 @@ csv_files = {
             "availability",
             "status",
         ],
-        ITINERARY_DATA,
+        ENRICHED_ITINERARY_DATA,
     ),
     "trip_tips.csv": (["category", "title", "content", "language"], TRIP_TIPS_DATA),
 }

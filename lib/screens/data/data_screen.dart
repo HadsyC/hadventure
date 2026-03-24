@@ -36,6 +36,18 @@ class _ImportTableResult {
   });
 }
 
+class _TableImportSummary {
+  final String tableName;
+  final int insertedRows;
+  final int rejectedRows;
+
+  const _TableImportSummary({
+    required this.tableName,
+    required this.insertedRows,
+    required this.rejectedRows,
+  });
+}
+
 class DataScreen extends StatefulWidget {
   const DataScreen({super.key});
 
@@ -47,6 +59,7 @@ class _DataScreenState extends State<DataScreen> {
   bool _isImporting = false;
   String? _lastMessage;
   bool _lastSuccess = false;
+  List<_TableImportSummary> _lastImportSummary = const [];
 
   final Map<String, String> _aliasToCanonical = import_schema
       .buildAliasToCanonical();
@@ -98,6 +111,7 @@ class _DataScreenState extends State<DataScreen> {
     await db.delete(db.tripTips).go();
     await db.delete(db.packingItems).go();
     await db.delete(db.contacts).go();
+    await db.delete(db.locations).go();
     await db.delete(db.cities).go();
     await db.delete(db.trips).go();
 
@@ -123,30 +137,6 @@ class _DataScreenState extends State<DataScreen> {
             normalized.contains('itinerary_type'))) {
       return 'itinerary';
     }
-
-    return null;
-  }
-
-  Future<String?> _checkDependencies(String tableName) async {
-    final db = DatabaseProvider.of(context);
-
-    final tripCount = await db.select(db.trips).get();
-    final cityCount = await db.select(db.cities).get();
-
-    // Tables that need trips to exist first
-    const needsTrip = [
-      'cities',
-      'flights',
-      'trains',
-      'packing_items',
-      'trip_tips',
-      'contacts',
-    ];
-    // Tables that need cities to exist first
-    const needsCity = ['hotels', 'itinerary', 'activities'];
-
-    if (needsTrip.contains(tableName) && tripCount.isEmpty) return 'trips';
-    if (needsCity.contains(tableName) && cityCount.isEmpty) return 'cities';
 
     return null;
   }
@@ -234,7 +224,11 @@ class _DataScreenState extends State<DataScreen> {
 
     if (confirmed != true) return;
 
-    setState(() => _isImporting = true);
+    setState(() {
+      _isImporting = true;
+      _lastImportSummary = const [];
+    });
+    final tableSummaries = <_TableImportSummary>[];
     try {
       var totalInserted = 0;
       var totalRejected = 0;
@@ -254,6 +248,13 @@ class _DataScreenState extends State<DataScreen> {
         totalRejected += result.rejectedRows;
         diagnostics.addAll(result.diagnostics);
         totalTables++;
+        tableSummaries.add(
+          _TableImportSummary(
+            tableName: table,
+            insertedRows: result.insertedRows,
+            rejectedRows: result.rejectedRows,
+          ),
+        );
       }
 
       final diagnosticPreview = diagnostics.take(5).join(' | ');
@@ -265,7 +266,28 @@ class _DataScreenState extends State<DataScreen> {
     } catch (e) {
       _setMessage('ZIP import failed: $e', false);
     } finally {
-      setState(() => _isImporting = false);
+      setState(() {
+        _isImporting = false;
+        _lastImportSummary = tableSummaries;
+      });
+    }
+  }
+
+  String _tableLabel(String tableName) {
+    switch (tableName) {
+      case 'trip_tips':
+        return 'Tips & Phrases';
+      case 'packing_items':
+        return 'Packing List';
+      default:
+        return tableName
+            .split('_')
+            .map(
+              (part) => part.isEmpty
+                  ? part
+                  : '${part[0].toUpperCase()}${part.substring(1)}',
+            )
+            .join(' ');
     }
   }
 
@@ -1012,6 +1034,56 @@ class _DataScreenState extends State<DataScreen> {
                           ),
                         ),
                       ],
+                    ),
+                  ),
+
+                if (_lastImportSummary.isNotEmpty)
+                  Card(
+                    margin: const EdgeInsets.only(top: 8),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Last import summary',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          ..._lastImportSummary.map((summary) {
+                            final hasRejected = summary.rejectedRows > 0;
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(_tableLabel(summary.tableName)),
+                                  ),
+                                  Text(
+                                    '+${summary.insertedRows}',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: colorScheme.primary,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    '-${summary.rejectedRows}',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: hasRejected
+                                          ? colorScheme.error
+                                          : colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
+                        ],
+                      ),
                     ),
                   ),
 

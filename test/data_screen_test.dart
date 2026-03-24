@@ -30,6 +30,28 @@ void main() {
             ),
           );
 
+      final trip = (await testDb.select(testDb.trips).get()).first;
+      await testDb
+          .into(testDb.cities)
+          .insert(
+            CitiesCompanion.insert(
+              tripId: trip.id,
+              name: 'Shanghai',
+              country: 'China',
+            ),
+          );
+      final city = (await testDb.select(testDb.cities).get()).first;
+      await testDb
+          .into(testDb.locations)
+          .insert(
+            LocationsCompanion.insert(
+              tripId: trip.id,
+              cityId: city.id,
+              name: 'Bund',
+              type: 'attraction',
+            ),
+          );
+
       await tester.pumpWidget(
         MaterialApp(
           home: DatabaseProvider(database: testDb, child: const DataScreen()),
@@ -54,6 +76,7 @@ void main() {
       final tips = await testDb.select(testDb.tripTips).get();
       final packing = await testDb.select(testDb.packingItems).get();
       final contacts = await testDb.select(testDb.contacts).get();
+      final locations = await testDb.select(testDb.locations).get();
 
       expect(trips, isEmpty);
       expect(cities, isEmpty);
@@ -64,6 +87,7 @@ void main() {
       expect(tips, isEmpty);
       expect(packing, isEmpty);
       expect(contacts, isEmpty);
+      expect(locations, isEmpty);
     });
   });
 }
