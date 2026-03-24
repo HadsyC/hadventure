@@ -40,7 +40,7 @@ class _DataScreenState extends State<DataScreen> {
     'flights',
     'trains',
     'hotels',
-    'activities',
+    'itinerary',
     'trip_tips',
     'packing_items',
     'contacts',
@@ -52,7 +52,7 @@ class _DataScreenState extends State<DataScreen> {
       builder: (_) => AlertDialog(
         title: const Text('Reset all data?'),
         content: const Text(
-          'This will permanently delete everything — trips, cities, activities, hotels, flights, trains, tips, packing and contacts.',
+          'This will permanently delete everything — trips, cities, itinerary, hotels, flights, trains, tips, packing and contacts.',
         ),
         actions: [
           TextButton(
@@ -98,8 +98,10 @@ class _DataScreenState extends State<DataScreen> {
     if (h.contains('train_number') && h.contains('departure')) return 'trains';
     if (h.contains('address_en') && h.contains('check_in_date'))
       return 'hotels';
-    if (h.contains('activity_type') && h.contains('city_name'))
-      return 'activities';
+    if ((h.contains('activity_type') || h.contains('itinerary_type')) &&
+        h.contains('city_name')) {
+      return 'itinerary';
+    }
     if (h.contains('category') &&
         h.contains('content') &&
         h.contains('language'))
@@ -125,7 +127,7 @@ class _DataScreenState extends State<DataScreen> {
       'contacts',
     ];
     // Tables that need cities to exist first
-    const needsCity = ['hotels', 'activities'];
+    const needsCity = ['hotels', 'itinerary', 'activities'];
 
     if (needsTrip.contains(tableName) && tripCount.isEmpty) return 'trips';
     if (needsCity.contains(tableName) && cityCount.isEmpty) return 'cities';
@@ -299,7 +301,7 @@ class _DataScreenState extends State<DataScreen> {
     String content, {
     required String sourceName,
   }) {
-    final rows = const CsvToListConverter(eol: '\n').convert(content);
+    final rows = const CsvToListConverter().convert(content);
 
     if (rows.isEmpty) {
       return null;
@@ -341,7 +343,7 @@ class _DataScreenState extends State<DataScreen> {
       'trip_tips',
       'contacts',
     };
-    const needsCity = {'hotels', 'activities'};
+    const needsCityCompat = {'hotels', 'itinerary', 'activities'};
 
     if (needsTrip.contains(tableName) &&
         !hasTripsInDb &&
@@ -349,7 +351,7 @@ class _DataScreenState extends State<DataScreen> {
       return 'trips';
     }
 
-    if (needsCity.contains(tableName) &&
+    if (needsCityCompat.contains(tableName) &&
         !hasCitiesInDb &&
         !plannedTables.contains('cities')) {
       return 'cities';
@@ -375,6 +377,7 @@ class _DataScreenState extends State<DataScreen> {
       'flights',
       'trains',
       'hotels',
+      'itinerary',
       'activities',
       'trip_tips',
       'packing_items',
@@ -597,6 +600,7 @@ class _DataScreenState extends State<DataScreen> {
           }
           break;
 
+        case 'itinerary':
         case 'activities':
           await db.delete(db.activities).go();
           for (final row in rows) {
@@ -614,7 +618,9 @@ class _DataScreenState extends State<DataScreen> {
                     date: dt(m, 'date') ?? DateTime.now(),
                     title: str(m, 'title') ?? '',
                     time: Value(str(m, 'time')),
-                    activityType: Value(str(m, 'activity_type')),
+                    activityType: Value(
+                      str(m, 'itinerary_type') ?? str(m, 'activity_type'),
+                    ),
                     location: Value(str(m, 'location')),
                     lat: Value(dbl(m, 'lat')),
                     lng: Value(dbl(m, 'lng')),
@@ -726,9 +732,9 @@ class _DataScreenState extends State<DataScreen> {
       (name: 'trains', icon: Icons.train_outlined, label: 'Trains'),
       (name: 'hotels', icon: Icons.hotel_outlined, label: 'Hotels'),
       (
-        name: 'activities',
+        name: 'itinerary',
         icon: Icons.local_activity_outlined,
-        label: 'Activities',
+        label: 'Itinerary',
       ),
       (
         name: 'trip_tips',
@@ -1033,7 +1039,7 @@ class _ZipImportPreviewDialog extends StatelessWidget {
       'flights',
       'trains',
       'hotels',
-      'activities',
+      'itinerary',
       'trip_tips',
       'packing_items',
       'contacts',

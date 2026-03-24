@@ -108,7 +108,7 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
     if (_cities.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Add a city first before adding activities.'),
+          content: Text('Add a city first before adding itinerary items.'),
         ),
       );
       return;
@@ -222,7 +222,7 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'No activities yet.',
+                      'No itinerary items yet.',
                       style: theme.textTheme.titleMedium,
                     ),
                     const SizedBox(height: 8),
