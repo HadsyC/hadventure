@@ -1,8 +1,11 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/database/app_database.dart';
 import '../../core/database/database_provider.dart';
 import '../../core/database/queries.dart';
+import '../../core/widgets/linkify_text.dart';
 
 class ItineraryOpenRequest {
   final int tabIndex;
@@ -40,6 +43,14 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
   List<ItineraryData> _itineraries = [];
   bool _loading = true;
   bool _initialized = false;
+
+  Future<void> _openExternalUrl(String href) async {
+    final uri = Uri.tryParse(href);
+    if (uri == null || !(uri.isScheme('http') || uri.isScheme('https'))) {
+      return;
+    }
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
 
   @override
   void didChangeDependencies() {
@@ -308,9 +319,9 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                   haystack.contains('check out') ||
                   haystack.contains('checkout'))
               ? 'Hotels'
-          : ((item.trainId != null || haystack.contains('train'))
-            ? 'Trains'
-            : 'Flights'))
+              : ((item.trainId != null || haystack.contains('train'))
+                    ? 'Trains'
+                    : 'Flights'))
         : null;
 
     showModalBottomSheet(
@@ -402,6 +413,30 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                   label: Text('Open $linkedLabel view'),
                 ),
               ],
+              if (item.url != null && item.url!.trim().isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  'Reference',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                LinkifyText(text: item.url!.trim()),
+              ],
+              if (item.mapUrl != null && item.mapUrl!.trim().isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  'Map Link',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                LinkifyText(text: item.mapUrl!.trim()),
+              ],
               const SizedBox(height: 14),
               Text(
                 'Notes',
@@ -418,12 +453,22 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                   color: colorScheme.surfaceContainerLow,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text(
-                  (item.notes != null && item.notes!.trim().isNotEmpty)
-                      ? item.notes!.trim()
-                      : 'No notes for this entry.',
-                  style: theme.textTheme.bodyMedium,
-                ),
+                child: (item.notes != null && item.notes!.trim().isNotEmpty)
+                    ? MarkdownBody(
+                        data: item.notes!.trim(),
+                        selectable: true,
+                        styleSheet: MarkdownStyleSheet.fromTheme(
+                          theme,
+                        ).copyWith(p: theme.textTheme.bodyMedium),
+                        onTapLink: (_, href, _) {
+                          if (href == null) return;
+                          _openExternalUrl(href);
+                        },
+                      )
+                    : Text(
+                        'No notes for this entry.',
+                        style: theme.textTheme.bodyMedium,
+                      ),
               ),
               const SizedBox(height: 16),
               Row(
@@ -813,12 +858,13 @@ class _ItineraryFormState extends State<_ItineraryForm> {
   String? _selectedStatus;
 
   final _activityTypes = [
+    'Activity',
+    'Accommodation',
+    'Flight',
+    'Train',
     'Sightseeing',
     'Restaurant',
     'Tour',
-    'Flight',
-    'Train',
-    'Hotel',
     'Free Time',
     'Event',
     'Optional',
@@ -848,8 +894,8 @@ class _ItineraryFormState extends State<_ItineraryForm> {
     _hotelId = TextEditingController(text: a?.hotelId?.toString() ?? '');
     _selectedCityId = a?.cityId ?? widget.cities.firstOrNull?.id;
     _selectedDate = a?.date ?? DateTime.now();
-    _selectedType = a?.type;
-    _selectedStatus = a?.status;
+    _selectedType = a?.type ?? 'Activity';
+    _selectedStatus = a?.status ?? 'pending';
   }
 
   @override
@@ -952,7 +998,7 @@ class _ItineraryFormState extends State<_ItineraryForm> {
 
             // City
             DropdownButtonFormField<int>(
-              value: _selectedCityId,
+              initialValue: _selectedCityId,
               decoration: const InputDecoration(
                 labelText: 'City',
                 border: OutlineInputBorder(),
@@ -1017,7 +1063,7 @@ class _ItineraryFormState extends State<_ItineraryForm> {
               children: [
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    value: _selectedType,
+                    initialValue: _selectedType,
                     decoration: const InputDecoration(
                       labelText: 'Type',
                       border: OutlineInputBorder(),
@@ -1032,7 +1078,7 @@ class _ItineraryFormState extends State<_ItineraryForm> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    value: _selectedStatus,
+                    initialValue: _selectedStatus,
                     decoration: const InputDecoration(
                       labelText: 'Status',
                       border: OutlineInputBorder(),

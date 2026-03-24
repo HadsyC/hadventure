@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/database/app_database.dart';
 import '../../core/database/database_provider.dart';
 import '../../core/database/queries.dart';
+import '../../core/widgets/linkify_text.dart';
 
 class HotelsScreen extends StatefulWidget {
   final int? highlightedHotelId;
@@ -66,6 +67,70 @@ class _HotelsScreenState extends State<HotelsScreen> {
     });
   }
 
+  void _openViewSheet(Hotel hotel) {
+    final theme = Theme.of(context);
+    final city = _cityById[hotel.cityId];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                hotel.name,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(city?.name ?? 'Unknown city'),
+              const SizedBox(height: 10),
+              Text(
+                'Check-in: ${_fmtDate(hotel.checkIn)} ${hotel.checkInTime ?? ''}',
+              ),
+              Text(
+                'Check-out: ${_fmtDate(hotel.checkOut)} ${hotel.checkOutTime ?? ''}',
+              ),
+              if (hotel.addressEn?.isNotEmpty == true) ...[
+                const SizedBox(height: 12),
+                Text('Address (EN)', style: theme.textTheme.titleSmall),
+                const SizedBox(height: 4),
+                Text(hotel.addressEn!),
+              ],
+              if (hotel.addressLocal?.isNotEmpty == true) ...[
+                const SizedBox(height: 12),
+                Text('Address (Local)', style: theme.textTheme.titleSmall),
+                const SizedBox(height: 4),
+                Text(hotel.addressLocal!),
+              ],
+              if (hotel.website?.isNotEmpty == true) ...[
+                const SizedBox(height: 12),
+                Text('Website', style: theme.textTheme.titleSmall),
+                const SizedBox(height: 4),
+                LinkifyText(text: hotel.website!),
+              ],
+              if (hotel.mapUrl?.isNotEmpty == true) ...[
+                const SizedBox(height: 12),
+                Text('Map', style: theme.textTheme.titleSmall),
+                const SizedBox(height: 4),
+                LinkifyText(text: hotel.mapUrl!),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -104,6 +169,11 @@ class _HotelsScreenState extends State<HotelsScreen> {
                             '${city?.name ?? 'Unknown city'}\n${_fmtDate(h.checkIn)} - ${_fmtDate(h.checkOut)}',
                           ),
                           isThreeLine: true,
+                          trailing: const Icon(
+                            Icons.open_in_new_outlined,
+                            size: 18,
+                          ),
+                          onTap: () => _openViewSheet(h),
                         ),
                       );
                     }),

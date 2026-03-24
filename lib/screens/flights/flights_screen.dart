@@ -3,6 +3,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:hadventure/core/database/queries.dart';
 import '../../core/database/app_database.dart';
 import '../../core/database/database_provider.dart';
+import '../../core/widgets/linkify_text.dart';
 
 class FlightsScreen extends StatefulWidget {
   final int? highlightedFlightId;
@@ -108,7 +109,7 @@ class _FlightsScreenState extends State<FlightsScreen> {
               if (flight.duration?.isNotEmpty == true)
                 Text('Duration: ${flight.duration}'),
               if (flight.trackerUrl?.isNotEmpty == true)
-                Text('Tracker: ${flight.trackerUrl}'),
+                LinkifyText(text: 'Tracker: ${flight.trackerUrl}'),
             ],
           ),
         ),

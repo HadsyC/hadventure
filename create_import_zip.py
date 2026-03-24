@@ -59,14 +59,26 @@ def repair_mojibake(text: str) -> str:
         return text
 
 
-def clean_markdown_text(text: str) -> str:
+def preserve_markdown_text(text: str) -> str:
+    """Repair encoding but preserve markdown formatting and URLs for rich UI rendering."""
     value = repair_mojibake(text)
-    # Replace markdown links with link text so notes stay readable.
-    value = re.sub(r"\[([^\]]+)\]\([^)]*\)", r"\1", value)
-    value = re.sub(r"https?://\S+", "", value)
-    value = re.sub(r"[*_`#>]", "", value)
     value = re.sub(r"\s+", " ", value).strip()
     return value
+
+
+def clean_markdown_text(text: str) -> str:
+    """Strip markdown for plain-text display (titles, locations, etc)."""
+    value = repair_mojibake(text)
+    # Replace markdown links with link text so titles stay readable.
+    value = re.sub(r"\[([^\]]+)\]\([^)]*\)", r"\1", value)
+    value = re.sub(r"https?://\S+", "", value)
+    value = re.sub(r"[*_`#>-]", "", value)
+    value = re.sub(r"\s+", " ", value).strip()
+    return value
+
+
+def extract_urls(text: str) -> list[str]:
+    return [m.group(0).rstrip(").,;") for m in re.finditer(r"https?://\S+", text)]
 
 
 def clean_text(value: str | None) -> str:
@@ -269,13 +281,15 @@ def parse_helpful_tips_markdown(path: Path) -> list[dict[str, str]]:
 
     tips: list[dict[str, str]] = []
     for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
-        text = clean_markdown_text(line)
-        if not text.startswith("-"):
+        clean = clean_text(line)
+        if not clean.startswith("-"):
             continue
-        content = text.lstrip("-").strip()
+        # Preserve markdown formatting in content (bold, emphasis, links).
+        content = preserve_markdown_text(clean.lstrip("-").strip())
         if not content:
             continue
-        title_words = content.split()
+        # Extract plain-text title from content for indexing.
+        title_words = clean_markdown_text(content).split()
         title = " ".join(title_words[:4]).rstrip(".,:;!?")
         tips.append(
             {
@@ -299,8 +313,7 @@ def parse_basic_chinese_markdown(path: Path) -> list[dict[str, str]]:
 
     for line in lines:
         raw = clean_text(line)
-        text = clean_markdown_text(line)
-        if not text and not raw:
+        if not raw:
             continue
 
         if raw.strip().startswith("##"):
@@ -312,12 +325,15 @@ def parse_basic_chinese_markdown(path: Path) -> list[dict[str, str]]:
             pending_title = clean_markdown_text(raw)
             continue
 
-        if pending_title and not text.startswith("---"):
+        is_separator = raw.strip().startswith("---")
+        if pending_title and not is_separator:
+            # Preserve markdown formatting in content for UI rendering.
+            content = preserve_markdown_text(raw)
             tips.append(
                 {
                     "category": f"Language - {section}",
                     "title": pending_title,
-                    "content": text,
+                    "content": content,
                     "language": "Chinese",
                 }
             )
@@ -371,10 +387,24 @@ def parse_city_markdown_activities(
         parsed_heading_date = parse_spanish_heading_date(title, arrival_date.year)
         day_date = parsed_heading_date or (arrival_date + timedelta(days=day_index))
 
-        raw_body = " ".join(l for l in body_lines if l and not l.startswith("---"))
-        body = clean_markdown_text(raw_body)
-        time_match = re.search(r"\b([0-2]?\d:[0-5]\d)\b", body)
-        url_match = re.search(r"https?://\S+", raw_body)
+        filtered_lines = [
+            repair_mojibake(l).strip()
+            for l in body_lines
+            if l and not l.strip().startswith("---")
+        ]
+        raw_body = "\n\n".join(filtered_lines).strip()
+        # Search for time in raw markdown (with formatting preserved).
+        time_match = re.search(r"\b([0-2]?\d:[0-5]\d)\b", raw_body)
+        urls = extract_urls(raw_body)
+        amap_url = next(
+            (
+                u
+                for u in urls
+                if any(host in u.lower() for host in ["amap", "wb.amap", "surl.amap"])
+            ),
+            None,
+        )
+        best_url = amap_url or (urls[0] if urls else "")
         link_match = re.search(r"\[([^\]]+)\]\((https?://[^)]+|[^)]+)\)", raw_body)
 
         clean_title = title
@@ -390,7 +420,8 @@ def parse_city_markdown_activities(
                 clean_markdown_text(title.split("|", 1)[1]) or city_name
             )
 
-        note_excerpt = body[:260]
+        # Keep full day narrative in markdown so app UI can render rich, clickable context.
+        note_excerpt = raw_body[:5000]
         row = {
             "city_name": city_name,
             "date": day_date.isoformat(),
@@ -400,7 +431,7 @@ def parse_city_markdown_activities(
             "location": location_candidate,
             "address_en": hotel_address_en or city_name,
             "address_local": hotel_address_local or city_name,
-            "map_url": url_match.group(0) if url_match else map_url,
+            "map_url": best_url or map_url,
             "notes": note_excerpt,
             "url": "",
             "price": "",

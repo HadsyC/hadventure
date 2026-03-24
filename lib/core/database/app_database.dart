@@ -25,7 +25,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   /// Private constructor for test databases with in-memory storage
-  AppDatabase._test(DatabaseConnection connection) : super(connection);
+  AppDatabase._test(DatabaseConnection super.connection);
 
   /// Factory for creating test databases
   factory AppDatabase.forTest() {
