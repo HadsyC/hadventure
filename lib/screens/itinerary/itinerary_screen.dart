@@ -38,6 +38,8 @@ class ItineraryScreen extends StatefulWidget {
 }
 
 class _ItineraryScreenState extends State<ItineraryScreen> {
+  static const String _autoCreatedImportCityNote =
+      'Auto-created from itinerary import';
   int? _selectedCityId;
   List<City> _cities = [];
   List<ItineraryData> _itineraries = [];
@@ -113,6 +115,16 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
       if (match != null) setState(() => _selectedCityId = match.id);
     }
   }
+
+  List<City> get _filterChipCities => _cities
+      .where(
+        (c) =>
+            !(c.notes?.toLowerCase().contains(
+                  _autoCreatedImportCityNote.toLowerCase(),
+                ) ??
+                false),
+      )
+      .toList();
 
   List<ItineraryData> get _filtered {
     var list = List<ItineraryData>.from(_itineraries);
@@ -644,7 +656,7 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
           ),
 
           // City filter chips
-          if (_cities.isNotEmpty)
+          if (_filterChipCities.isNotEmpty)
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -656,7 +668,7 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                       selected: _selectedCityId == null,
                       onSelected: (_) => setState(() => _selectedCityId = null),
                     ),
-                    ..._cities.map(
+                    ..._filterChipCities.map(
                       (city) => FilterChip(
                         label: Text(city.name),
                         selected: _selectedCityId == city.id,

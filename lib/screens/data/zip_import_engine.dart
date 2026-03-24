@@ -400,11 +400,27 @@ class ZipImportEngine {
       return allTrips.first.id;
     }
 
-    int? resolveCityId(String? cityName) {
+    Future<int?> resolveOrCreateCityId(String? cityName) async {
       final tripId = resolveTripId();
-      final cityKey = normalize(canonicalCityName(cityName));
+      final canonicalName = canonicalCityName(cityName);
+      final cityKey = normalize(canonicalName);
       if (tripId == null || cityKey == null) return null;
-      return cityIdByTripAndName['$tripId|$cityKey'];
+
+      final existingId = cityIdByTripAndName['$tripId|$cityKey'];
+      if (existingId != null) return existingId;
+
+      final insertedId = await db
+          .into(db.cities)
+          .insert(
+            CitiesCompanion.insert(
+              tripId: tripId,
+              name: canonicalName!,
+              country: 'Unknown',
+              notes: const Value('Auto-created from itinerary import'),
+            ),
+          );
+      cityIdByTripAndName['$tripId|$cityKey'] = insertedId;
+      return insertedId;
     }
 
     Future<void> rejectRow(String reason, int rowIndex) async {
@@ -559,7 +575,7 @@ class ZipImportEngine {
           for (var i = 0; i < rows.length; i++) {
             final row = rows[i];
             final m = rowToMap(row);
-            final cityId = resolveCityId(str(m, 'city_name'));
+            final cityId = await resolveOrCreateCityId(str(m, 'city_name'));
             if (cityId == null) {
               await rejectRow('Could not resolve city_name for hotel row', i);
               continue;
@@ -599,7 +615,7 @@ class ZipImportEngine {
             final row = rows[i];
             final m = rowToMap(row);
             final tripId = resolveTripId();
-            final cityId = resolveCityId(str(m, 'city_name'));
+            final cityId = await resolveOrCreateCityId(str(m, 'city_name'));
             if (tripId == null || cityId == null) {
               await rejectRow(
                 'Could not resolve trip or city for location row',
@@ -642,7 +658,7 @@ class ZipImportEngine {
           for (var i = 0; i < rows.length; i++) {
             final row = rows[i];
             final m = rowToMap(row);
-            final cityId = resolveCityId(str(m, 'city_name'));
+            final cityId = await resolveOrCreateCityId(str(m, 'city_name'));
             if (cityId == null) {
               await rejectRow(
                 'Could not resolve city_name for itinerary row',
@@ -704,7 +720,7 @@ class ZipImportEngine {
               await rejectRow('Missing required tip fields', i);
               continue;
             }
-            final cityId = resolveCityId(str(m, 'city_name'));
+            final cityId = await resolveOrCreateCityId(str(m, 'city_name'));
             await db
                 .into(db.tripTips)
                 .insert(
@@ -726,7 +742,7 @@ class ZipImportEngine {
             final row = rows[i];
             final m = rowToMap(row);
             final tripId = resolveTripId();
-            final cityId = resolveCityId(str(m, 'city_name'));
+            final cityId = await resolveOrCreateCityId(str(m, 'city_name'));
             if (tripId == null || cityId == null) {
               await rejectRow(
                 'Could not resolve trip or city for city summary row',
@@ -757,7 +773,7 @@ class ZipImportEngine {
             final row = rows[i];
             final m = rowToMap(row);
             final tripId = resolveTripId();
-            final cityId = resolveCityId(str(m, 'city_name'));
+            final cityId = await resolveOrCreateCityId(str(m, 'city_name'));
             if (tripId == null || cityId == null) {
               await rejectRow('Could not resolve trip or city for food row', i);
               continue;
