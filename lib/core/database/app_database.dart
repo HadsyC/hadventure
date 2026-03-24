@@ -54,64 +54,12 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(trains, trains.totalPricePerPerson);
       }
 
-      if (from < 3) {
-        // Note: flightId, trainId, hotelId are already in the Itinerary table schema
-        // No need to add them again - they were created with the table
-        // If building from an even older schema, the defensive repair below handles it
-      }
-
       if (from < 4) {
-        // Add image support to existing tables
-        await m.addColumn(cities, cities.cityImage);
-        await m.addColumn(hotels, hotels.hotelImage);
-        await m.addColumn(itinerary, itinerary.image);
-
-        // Add bilingual address fields to hotels
-        await m.addColumn(hotels, hotels.addressEn);
-        await m.addColumn(hotels, hotels.addressLocal);
-        await m.addColumn(hotels, hotels.phone);
-        await m.addColumn(hotels, hotels.website);
-
         // Create new Locations table for map pins with bilingual addresses
         await m.createTable(locations);
       }
-
-      // Some earlier schema v1 databases missed nullable columns despite
-      // version number not changing; repair them defensively.
-      await _repairLegacyColumns(this);
-    },
-    beforeOpen: (details) async {
-      // Run lightweight schema repair on every open to handle legacy local DBs.
-      await _repairLegacyColumns(this);
     },
   );
-}
-
-Future<void> _repairLegacyColumns(AppDatabase db) async {
-  await _addColumnIfMissing(db, 'cities', 'notes', 'TEXT');
-  await _addColumnIfMissing(db, 'cities', 'city_image', 'TEXT');
-  await _addColumnIfMissing(db, 'itinerary', 'flight_id', 'INTEGER');
-  await _addColumnIfMissing(db, 'itinerary', 'train_id', 'INTEGER');
-  await _addColumnIfMissing(db, 'itinerary', 'hotel_id', 'INTEGER');
-  await _addColumnIfMissing(db, 'itinerary', 'image', 'TEXT');
-  await _addColumnIfMissing(db, 'hotels', 'hotel_image', 'TEXT');
-  await _addColumnIfMissing(db, 'hotels', 'address_en', 'TEXT');
-  await _addColumnIfMissing(db, 'hotels', 'address_local', 'TEXT');
-  await _addColumnIfMissing(db, 'hotels', 'phone', 'TEXT');
-  await _addColumnIfMissing(db, 'hotels', 'website', 'TEXT');
-}
-
-Future<void> _addColumnIfMissing(
-  GeneratedDatabase db,
-  String table,
-  String column,
-  String sqlType,
-) async {
-  final tableInfo = await db.customSelect('PRAGMA table_info($table)').get();
-  final exists = tableInfo.any((r) => r.data['name'] == column);
-  if (!exists) {
-    await db.customStatement('ALTER TABLE $table ADD COLUMN $column $sqlType');
-  }
 }
 
 LazyDatabase _openConnection() {

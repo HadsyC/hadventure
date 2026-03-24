@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:archive/archive.dart';
 import '../../core/database/app_database.dart';
 import '../../core/database/database_provider.dart';
+import 'import_zip_validator.dart';
 import 'package:drift/drift.dart' show Value;
 
 class _ImportPayload {
@@ -142,70 +143,12 @@ class _DataScreenState extends State<DataScreen> {
 
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['csv', 'zip'],
+      allowedExtensions: ['zip'],
     );
     if (result == null || result.files.isEmpty) return;
 
     final file = File(result.files.single.path!);
-    final ext = result.files.single.extension?.toLowerCase() ?? '';
-
-    if (ext == 'zip') {
-      await _importZipArchive(db, file);
-      return;
-    }
-
-    await _importSingleCsv(db, file);
-  }
-
-  Future<void> _importSingleCsv(AppDatabase db, File file) async {
-    final content = await file.readAsString();
-    final payload = _parseCsvPayload(content, sourceName: file.path);
-
-    if (payload == null) {
-      _setMessage('File is empty.', false);
-      return;
-    }
-
-    final missingDep = await _checkDependencies(payload.tableName);
-    if (missingDep != null) {
-      _setMessage(
-        'Cannot import ${payload.tableName} — "$missingDep" must be imported first.',
-        false,
-      );
-      return;
-    }
-
-    if (!mounted) return;
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => _ImportPreviewDialog(
-        tableName: payload.tableName,
-        headers: payload.headers,
-        dataRows: payload.dataRows,
-      ),
-    );
-
-    if (confirmed != true) return;
-
-    setState(() => _isImporting = true);
-
-    try {
-      await _importTable(
-        db,
-        payload.tableName,
-        payload.headers,
-        payload.dataRows,
-      );
-      _setMessage(
-        'Successfully imported ${payload.dataRows.length} rows into ${payload.tableName}.',
-        true,
-      );
-    } catch (e) {
-      _setMessage('Import failed: $e', false);
-    } finally {
-      setState(() => _isImporting = false);
-    }
+    await _importZipArchive(db, file);
   }
 
   Future<void> _importZipArchive(AppDatabase db, File file) async {
@@ -245,7 +188,18 @@ class _DataScreenState extends State<DataScreen> {
 
     if (byTable.isEmpty) {
       _setMessage(
-        'No usable CSV files were found in ZIP. Template files are ignored.',
+        'ZIP file must contain required CSV files: trips.csv, cities.csv, flights.csv, trains.csv, hotels.csv, itinerary.csv, trip_tips.csv.',
+        false,
+      );
+      return;
+    }
+
+    final missingRequired = missingRequiredZipTables(byTable.keys);
+    if (missingRequired.isNotEmpty) {
+      final missingFiles = missingRequired.map((table) => '$table.csv').toList()
+        ..sort();
+      _setMessage(
+        'ZIP is missing required files: ${missingFiles.join(', ')}.',
         false,
       );
       return;
@@ -699,6 +653,9 @@ class _DataScreenState extends State<DataScreen> {
   }
 
   void _setMessage(String msg, bool success) {
+    if (!success) {
+      debugPrint('[DataScreen][Error] $msg');
+    }
     setState(() {
       _lastMessage = msg;
       _lastSuccess = success;
@@ -762,9 +719,7 @@ class _DataScreenState extends State<DataScreen> {
                           ),
                         )
                       : const Icon(Icons.upload_file_outlined),
-                  label: Text(
-                    _isImporting ? 'Importing...' : 'Import CSV or ZIP',
-                  ),
+                  label: Text(_isImporting ? 'Importing...' : 'Import ZIP'),
                   style: FilledButton.styleFrom(
                     minimumSize: const Size.fromHeight(52),
                   ),
@@ -875,142 +830,6 @@ class _DataScreenState extends State<DataScreen> {
 }
 
 // ── PREVIEW DIALOG ───────────────────────────────────────────────────────────
-class _ImportPreviewDialog extends StatelessWidget {
-  final String tableName;
-  final List<String> headers;
-  final List<List<dynamic>> dataRows;
-
-  const _ImportPreviewDialog({
-    required this.tableName,
-    required this.headers,
-    required this.dataRows,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final preview = dataRows.take(3).toList();
-
-    return AlertDialog(
-      title: Row(
-        children: [
-          Icon(Icons.table_chart_outlined, color: colorScheme.primary),
-          const SizedBox(width: 8),
-          Text('Import $tableName'),
-        ],
-      ),
-      content: SizedBox(
-        width: double.maxFinite,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${dataRows.length} rows detected · ${headers.length} columns',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Preview (first 3 rows):',
-              style: theme.textTheme.labelMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: colorScheme.outlineVariant),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: DataTable(
-                  columnSpacing: 16,
-                  headingRowHeight: 36,
-                  dataRowMinHeight: 32,
-                  dataRowMaxHeight: 48,
-                  columns: headers
-                      .map(
-                        (h) => DataColumn(
-                          label: Text(
-                            h,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ),
-                      )
-                      .toList(),
-                  rows: preview
-                      .map(
-                        (row) => DataRow(
-                          cells: headers.asMap().entries.map((e) {
-                            final val = e.key < row.length
-                                ? row[e.key].toString()
-                                : '';
-                            return DataCell(
-                              Text(
-                                val.length > 20
-                                    ? '${val.substring(0, 20)}…'
-                                    : val,
-                                style: const TextStyle(fontSize: 11),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      )
-                      .toList(),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: colorScheme.errorContainer.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.warning_amber_outlined,
-                    size: 16,
-                    color: colorScheme.error,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'This will replace all existing data in $tableName.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: colorScheme.onErrorContainer,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: const Text('Cancel'),
-        ),
-        FilledButton.icon(
-          onPressed: () => Navigator.pop(context, true),
-          icon: const Icon(Icons.upload),
-          label: const Text('Import'),
-        ),
-      ],
-    );
-  }
-}
 
 class _ZipImportPreviewDialog extends StatelessWidget {
   final Map<String, _ImportPayload> importsByTable;

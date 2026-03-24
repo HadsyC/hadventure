@@ -1,6 +1,10 @@
+import 'dart:io';
+import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
+import 'package:archive/archive.dart';
+import 'package:csv/csv.dart';
 import 'package:hadventure/core/database/app_database.dart';
 
 void main() {
@@ -346,6 +350,166 @@ void main() {
       expect(tips.length, equals(1));
       expect(tips.first.category, equals('Safety Tips'));
     });
+
+    test(
+      'Can import complete trip data from hadventure_china_2026.zip',
+      () async {
+        // Load the ZIP file
+        final zipFile = File('raw_zip/hadventure_china_2026.zip');
+        expect(
+          zipFile.existsSync(),
+          true,
+          reason: 'ZIP file not found at ${zipFile.path}',
+        );
+
+        final bytes = await zipFile.readAsBytes();
+        final archive = ZipDecoder().decodeBytes(bytes);
+
+        // Parse all CSV files from the ZIP
+        final csvData = <String, List<List<dynamic>>>{};
+
+        for (final entry in archive.files) {
+          if (!entry.isFile || !entry.name.endsWith('.csv')) continue;
+
+          final fileBytes = switch (entry.content) {
+            List<int> v => v,
+            String s => utf8.encode(s),
+            _ => null,
+          };
+          if (fileBytes == null) continue;
+
+          final content = utf8.decode(fileBytes, allowMalformed: true);
+          final rows = const CsvToListConverter().convert(content);
+          if (rows.isNotEmpty) {
+            final fileName = entry.name.split('/').last.replaceAll('.csv', '');
+            csvData[fileName] = rows;
+          }
+        }
+
+        // Verify all expected CSVs are present
+        expect(
+          csvData.keys.toSet(),
+          containsAll([
+            'trips',
+            'cities',
+            'flights',
+            'trains',
+            'hotels',
+            'itinerary',
+            'trip_tips',
+          ]),
+          reason: 'Not all expected CSV files found in ZIP',
+        );
+
+        // Import trips first
+        final tripHeaders = csvData['trips']![0]
+            .map((e) => e.toString())
+            .toList();
+        final tripRows = csvData['trips']!.skip(1).toList();
+        expect(tripRows.length, equals(1), reason: 'Expected 1 trip in ZIP');
+
+        final trip = await testDb
+            .into(testDb.trips)
+            .insertReturning(
+              TripsCompanion.insert(
+                name: tripRows[0][tripHeaders.indexOf('name')].toString(),
+                startDate: DateTime.parse(
+                  tripRows[0][tripHeaders.indexOf('start_date')].toString(),
+                ),
+                endDate: DateTime.parse(
+                  tripRows[0][tripHeaders.indexOf('end_date')].toString(),
+                ),
+                currency: const drift.Value('EUR'),
+                timezone: const drift.Value('Asia/Shanghai'),
+              ),
+            );
+
+        // Import cities
+        final cityHeaders = csvData['cities']![0]
+            .map((e) => e.toString())
+            .toList();
+        final cityRows = csvData['cities']!.skip(1).toList();
+        expect(cityRows.length, equals(7), reason: 'Expected 7 cities in ZIP');
+
+        for (final row in cityRows) {
+          await testDb
+              .into(testDb.cities)
+              .insert(
+                CitiesCompanion.insert(
+                  tripId: trip.id,
+                  name: row[cityHeaders.indexOf('name')].toString(),
+                  country: row[cityHeaders.indexOf('country')].toString(),
+                  notes: drift.Value(
+                    row[cityHeaders.indexOf('notes')]?.toString(),
+                  ),
+                ),
+              );
+        }
+
+        // Import flights
+        final flightHeaders = csvData['flights']![0]
+            .map((e) => e.toString())
+            .toList();
+        final flightRows = csvData['flights']!.skip(1).toList();
+        expect(
+          flightRows.length,
+          equals(2),
+          reason: 'Expected 2 flights in ZIP',
+        );
+
+        for (final row in flightRows) {
+          await testDb
+              .into(testDb.flights)
+              .insert(
+                FlightsCompanion.insert(
+                  tripId: trip.id,
+                  flightNumber: row[flightHeaders.indexOf('flight_number')]
+                      .toString(),
+                  origin: row[flightHeaders.indexOf('origin')].toString(),
+                  destination: row[flightHeaders.indexOf('destination')]
+                      .toString(),
+                  departure: DateTime.parse(
+                    row[flightHeaders.indexOf('departure')].toString(),
+                  ),
+                  arrival: DateTime.parse(
+                    row[flightHeaders.indexOf('arrival')].toString(),
+                  ),
+                ),
+              );
+        }
+
+        // Verify data was imported
+        final trips = await testDb.select(testDb.trips).get();
+        expect(trips.length, equals(1));
+        expect(trips.first.name, equals('China 2026'));
+        expect(
+          trips.first.startDate,
+          equals(
+            DateTime.parse(
+              tripRows.first[tripHeaders.indexOf('start_date')].toString(),
+            ),
+          ),
+        );
+
+        final cities = await testDb.select(testDb.cities).get();
+        expect(cities.length, equals(7));
+        expect(cities.map((c) => c.name).toSet(), contains('Shanghai'));
+        expect(
+          cities.first.name,
+          equals(cityRows.first[cityHeaders.indexOf('name')].toString()),
+        );
+
+        final flights = await testDb.select(testDb.flights).get();
+        expect(flights.length, equals(2));
+        expect(flights.map((f) => f.flightNumber).toSet(), contains('LH732'));
+        expect(
+          flights.first.flightNumber,
+          equals(
+            flightRows.first[flightHeaders.indexOf('flight_number')].toString(),
+          ),
+        );
+      },
+    );
 
     test('Migration creates locations table correctly', () async {
       // Locations table should exist after migration
