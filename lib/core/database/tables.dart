@@ -57,9 +57,10 @@ class Cities extends Table with HasTripId, HasCoordinates {
   TextColumn get notes => text().nullable()();
   DateTimeColumn get arrivalDate => dateTime().nullable()();
   DateTimeColumn get departureDate => dateTime().nullable()();
+  TextColumn get cityImage => text().nullable()();
 }
 
-class Hotels extends Table with HasCityId, HasCoordinates, HasAddress {
+class Hotels extends Table with HasCityId, HasCoordinates {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get name => text()();
   TextColumn get localName => text().nullable()();
@@ -72,14 +73,19 @@ class Hotels extends Table with HasCityId, HasCoordinates, HasAddress {
   RealColumn get pricePerPerson => real().nullable()();
   RealColumn get pricePerPersonNight => real().nullable()();
   TextColumn get mapUrl => text().nullable()();
+  TextColumn get hotelImage => text().nullable()();
+  TextColumn get addressEn => text().nullable()();
+  TextColumn get addressLocal => text().nullable()();
+  TextColumn get phone => text().nullable()();
+  TextColumn get website => text().nullable()();
 }
 
-class Activities extends Table with HasCityId, HasCoordinates {
+class Itinerary extends Table with HasCityId, HasCoordinates {
   IntColumn get id => integer().autoIncrement()();
   DateTimeColumn get date => dateTime()();
   TextColumn get time => text().nullable()();
   TextColumn get title => text()();
-  TextColumn get activityType => text().nullable()();
+  TextColumn get type => text().nullable()();
   TextColumn get location => text().nullable()();
   TextColumn get notes => text().nullable()();
   TextColumn get url => text().nullable()();
@@ -89,6 +95,10 @@ class Activities extends Table with HasCityId, HasCoordinates {
   TextColumn get availability => text().nullable()();
   TextColumn get status => text().nullable()();
   DateTimeColumn get bookedAt => dateTime().nullable()();
+  IntColumn get flightId => integer().references(Flights, #id).nullable()();
+  IntColumn get trainId => integer().references(Trains, #id).nullable()();
+  IntColumn get hotelId => integer().references(Hotels, #id).nullable()();
+  TextColumn get image => text().nullable()();
 }
 
 class Flights extends Table with HasTripId, HasBooking {
@@ -135,4 +145,26 @@ class TripTips extends Table with HasTripId {
   TextColumn get title => text()();
   TextColumn get content => text()();
   TextColumn get language => text().nullable()();
+}
+
+class Locations extends Table with HasTripId, HasCityId, HasCoordinates {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get name => text()();
+  TextColumn get type =>
+      text()(); // train_station, hotel, restaurant, theater, attraction, etc.
+  TextColumn get category =>
+      text().nullable()(); // e.g., Fine Dining, Fast Food, Museums, Parks
+  TextColumn get addressEn =>
+      text().nullable()(); // English address for map apps
+  TextColumn get addressLocal =>
+      text().nullable()(); // Local language address for taxi/locals
+  TextColumn get mapUrl => text().nullable()(); // Amap URL or similar
+  TextColumn get image => text().nullable()(); // Image URI for location
+  TextColumn get notes => text().nullable()();
+  TextColumn get phone => text().nullable()();
+  TextColumn get website => text().nullable()();
+  TextColumn get sourceTable =>
+      text().nullable()(); // Origin table (hotels, restaurants, etc)
+  TextColumn get sourceId =>
+      text().nullable()(); // ID in origin table for traceability
 }

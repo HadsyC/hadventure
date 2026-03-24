@@ -73,7 +73,7 @@ class _DataScreenState extends State<DataScreen> {
     if (confirmed != true) return;
 
     final db = DatabaseProvider.of(context);
-    await db.delete(db.activities).go();
+    await db.delete(db.itinerary).go();
     await db.delete(db.hotels).go();
     await db.delete(db.flights).go();
     await db.delete(db.trains).go();
@@ -93,7 +93,9 @@ class _DataScreenState extends State<DataScreen> {
         h.contains('end_date') &&
         h.contains('timezone'))
       return 'trips';
-    if (h.contains('trip_name') && h.contains('arrival_date')) return 'cities';
+    if (h.contains('arrival_date') && h.contains('departure_date')) {
+      return 'cities';
+    }
     if (h.contains('flight_number') && h.contains('airline')) return 'flights';
     if (h.contains('train_number') && h.contains('departure')) return 'trains';
     if (h.contains('address_en') && h.contains('check_in_date'))
@@ -107,7 +109,7 @@ class _DataScreenState extends State<DataScreen> {
         h.contains('language'))
       return 'trip_tips';
     if (h.contains('item') && h.contains('is_packed')) return 'packing_items';
-    if (h.contains('role') && h.contains('trip_name')) return 'contacts';
+    if (h.contains('role') && h.contains('name')) return 'contacts';
     return null;
   }
 
@@ -441,9 +443,6 @@ class _DataScreenState extends State<DataScreen> {
     }
 
     final allTrips = await db.select(db.trips).get();
-    final tripIdByName = <String, int>{
-      for (final t in allTrips) t.name.trim().toLowerCase(): t.id,
-    };
 
     final allCities = await db.select(db.cities).get();
     final cityIdByTripAndName = <String, int>{
@@ -451,14 +450,13 @@ class _DataScreenState extends State<DataScreen> {
         '${c.tripId}|${c.name.trim().toLowerCase()}': c.id,
     };
 
-    int? resolveTripId(String? tripName) {
-      final key = normalize(tripName);
-      if (key == null) return null;
-      return tripIdByName[key];
+    int? resolveTripId() {
+      if (allTrips.isEmpty) return null;
+      return allTrips.first.id;
     }
 
-    int? resolveCityId(String? tripName, String? cityName) {
-      final tripId = resolveTripId(tripName);
+    int? resolveCityId(String? cityName) {
+      final tripId = resolveTripId();
       final cityKey = normalize(cityName);
       if (tripId == null || cityKey == null) return null;
       return cityIdByTripAndName['$tripId|$cityKey'];
@@ -489,7 +487,7 @@ class _DataScreenState extends State<DataScreen> {
           await db.delete(db.cities).go();
           for (final row in rows) {
             final m = rowToMap(row);
-            final tripId = resolveTripId(str(m, 'trip_name'));
+            final tripId = resolveTripId();
             if (tripId == null) continue;
             await db
                 .into(db.cities)
@@ -512,7 +510,7 @@ class _DataScreenState extends State<DataScreen> {
           await db.delete(db.flights).go();
           for (final row in rows) {
             final m = rowToMap(row);
-            final tripId = resolveTripId(str(m, 'trip_name'));
+            final tripId = resolveTripId();
             if (tripId == null) continue;
             await db
                 .into(db.flights)
@@ -541,7 +539,7 @@ class _DataScreenState extends State<DataScreen> {
           await db.delete(db.trains).go();
           for (final row in rows) {
             final m = rowToMap(row);
-            final tripId = resolveTripId(str(m, 'trip_name'));
+            final tripId = resolveTripId();
             if (tripId == null) continue;
             await db
                 .into(db.trains)
@@ -570,10 +568,7 @@ class _DataScreenState extends State<DataScreen> {
           await db.delete(db.hotels).go();
           for (final row in rows) {
             final m = rowToMap(row);
-            final cityId = resolveCityId(
-              str(m, 'trip_name'),
-              str(m, 'city_name'),
-            );
+            final cityId = resolveCityId(str(m, 'city_name'));
             if (cityId == null) continue;
             await db
                 .into(db.hotels)
@@ -582,8 +577,8 @@ class _DataScreenState extends State<DataScreen> {
                     cityId: cityId,
                     name: str(m, 'name') ?? '',
                     localName: Value(str(m, 'local_name')),
-                    address: Value(str(m, 'address_en')),
-                    localAddress: Value(str(m, 'address_cn')),
+                    addressEn: Value(str(m, 'address_en')),
+                    addressLocal: Value(str(m, 'address_cn')),
                     checkIn: Value(dt(m, 'check_in_date')),
                     checkOut: Value(dt(m, 'check_out_date')),
                     checkInTime: Value(str(m, 'check_in_time')),
@@ -602,23 +597,20 @@ class _DataScreenState extends State<DataScreen> {
 
         case 'itinerary':
         case 'activities':
-          await db.delete(db.activities).go();
+          await db.delete(db.itinerary).go();
           for (final row in rows) {
             final m = rowToMap(row);
-            final cityId = resolveCityId(
-              str(m, 'trip_name'),
-              str(m, 'city_name'),
-            );
+            final cityId = resolveCityId(str(m, 'city_name'));
             if (cityId == null) continue;
             await db
-                .into(db.activities)
+                .into(db.itinerary)
                 .insert(
-                  ActivitiesCompanion.insert(
+                  ItineraryCompanion.insert(
                     cityId: cityId,
                     date: dt(m, 'date') ?? DateTime.now(),
                     title: str(m, 'title') ?? '',
                     time: Value(str(m, 'time')),
-                    activityType: Value(
+                    type: Value(
                       str(m, 'itinerary_type') ?? str(m, 'activity_type'),
                     ),
                     location: Value(str(m, 'location')),
@@ -631,6 +623,9 @@ class _DataScreenState extends State<DataScreen> {
                     duration: Value(intVal(m, 'duration_minutes')),
                     availability: Value(str(m, 'availability')),
                     status: Value(str(m, 'status')),
+                    flightId: Value(intVal(m, 'flight_id')),
+                    trainId: Value(intVal(m, 'train_id')),
+                    hotelId: Value(intVal(m, 'hotel_id')),
                   ),
                 );
           }
@@ -640,12 +635,9 @@ class _DataScreenState extends State<DataScreen> {
           await db.delete(db.tripTips).go();
           for (final row in rows) {
             final m = rowToMap(row);
-            final tripId = resolveTripId(str(m, 'trip_name'));
+            final tripId = resolveTripId();
             if (tripId == null) continue;
-            final cityId = resolveCityId(
-              str(m, 'trip_name'),
-              str(m, 'city_name'),
-            );
+            final cityId = resolveCityId(str(m, 'city_name'));
             await db
                 .into(db.tripTips)
                 .insert(
@@ -665,7 +657,7 @@ class _DataScreenState extends State<DataScreen> {
           await db.delete(db.packingItems).go();
           for (final row in rows) {
             final m = rowToMap(row);
-            final tripId = resolveTripId(str(m, 'trip_name'));
+            final tripId = resolveTripId();
             if (tripId == null) continue;
             await db
                 .into(db.packingItems)
@@ -686,7 +678,7 @@ class _DataScreenState extends State<DataScreen> {
           await db.delete(db.contacts).go();
           for (final row in rows) {
             final m = rowToMap(row);
-            final tripId = resolveTripId(str(m, 'trip_name'));
+            final tripId = resolveTripId();
             if (tripId == null) continue;
             await db
                 .into(db.contacts)

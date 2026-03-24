@@ -6,9 +6,9 @@ extension AppQueries on AppDatabase {
   Future<List<City>> citiesForTrip(int tripId) =>
       (select(cities)..where((c) => c.tripId.equals(tripId))).get();
 
-  // All activities for a city
-  Future<List<Activity>> activitiesForCity(int cityId) =>
-      (select(activities)
+  // All itinerary entries for a city
+  Future<List<ItineraryData>> itinerariesForCity(int cityId) =>
+      (select(itinerary)
             ..where((a) => a.cityId.equals(cityId))
             ..orderBy([
               (a) => OrderingTerm.asc(a.date),
@@ -16,9 +16,12 @@ extension AppQueries on AppDatabase {
             ]))
           .get();
 
-  // Activities for a city filtered by date
-  Future<List<Activity>> activitiesForCityOnDate(int cityId, DateTime date) =>
-      (select(activities)
+  // Itinerary entries for a city filtered by date
+  Future<List<ItineraryData>> itinerariesForCityOnDate(
+    int cityId,
+    DateTime date,
+  ) =>
+      (select(itinerary)
             ..where(
               (a) =>
                   a.cityId.equals(cityId) &
@@ -30,11 +33,11 @@ extension AppQueries on AppDatabase {
             ..orderBy([(a) => OrderingTerm.asc(a.time)]))
           .get();
 
-  // All activities across all cities for a trip
-  Future<List<Activity>> allActivitiesForTrip(int tripId) async {
+  // All itinerary entries across all cities for a trip
+  Future<List<ItineraryData>> allItinerariesForTrip(int tripId) async {
     final tripCities = await citiesForTrip(tripId);
     final cityIds = tripCities.map((c) => c.id).toList();
-    return (select(activities)
+    return (select(itinerary)
           ..where((a) => a.cityId.isIn(cityIds))
           ..orderBy([
             (a) => OrderingTerm.asc(a.date),
@@ -43,11 +46,11 @@ extension AppQueries on AppDatabase {
         .get();
   }
 
-  // Watch activities (reactive stream) for a trip
-  Stream<List<Activity>> watchActivitiesForTrip(int tripId) async* {
+  // Watch itinerary (reactive stream) for a trip
+  Stream<List<ItineraryData>> watchItinerariesForTrip(int tripId) async* {
     final tripCities = await citiesForTrip(tripId);
     final cityIds = tripCities.map((c) => c.id).toList();
-    yield* (select(activities)
+    yield* (select(itinerary)
           ..where((a) => a.cityId.isIn(cityIds))
           ..orderBy([
             (a) => OrderingTerm.asc(a.date),

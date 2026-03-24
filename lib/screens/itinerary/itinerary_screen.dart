@@ -4,16 +4,30 @@ import '../../core/database/app_database.dart';
 import '../../core/database/database_provider.dart';
 import '../../core/database/queries.dart';
 
+class ItineraryOpenRequest {
+  final int tabIndex;
+  final int? flightId;
+  final int? trainId;
+  final int? hotelId;
+
+  const ItineraryOpenRequest({
+    required this.tabIndex,
+    this.flightId,
+    this.trainId,
+    this.hotelId,
+  });
+}
+
 class ItineraryScreen extends StatefulWidget {
   final String? filterCity;
   final DateTime? filterDate;
-  final ValueChanged<int>? onOpenTab;
+  final ValueChanged<ItineraryOpenRequest>? onOpenLinkedView;
 
   const ItineraryScreen({
     super.key,
     this.filterCity,
     this.filterDate,
-    this.onOpenTab,
+    this.onOpenLinkedView,
   });
 
   @override
@@ -23,7 +37,7 @@ class ItineraryScreen extends StatefulWidget {
 class _ItineraryScreenState extends State<ItineraryScreen> {
   int? _selectedCityId;
   List<City> _cities = [];
-  List<Activity> _activities = [];
+  List<ItineraryData> _itineraries = [];
   bool _loading = true;
   bool _initialized = false;
 
@@ -49,19 +63,16 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
     setState(() => _loading = true);
     final db = DatabaseProvider.of(context);
     final trip = await db.currentTrip;
-    print('DEBUG trip: $trip');
     if (trip == null) {
       setState(() => _loading = false);
       return;
     }
     final cities = await db.citiesForTrip(trip.id);
-    print('DEBUG cities: ${cities.length}');
-    final activities = await db.allActivitiesForTrip(trip.id);
-    print('DEBUG activities: ${activities.length}');
+    final itineraries = await db.allItinerariesForTrip(trip.id);
 
     setState(() {
       _cities = cities;
-      _activities = activities;
+      _itineraries = itineraries;
       _loading = false;
     });
     _applyFilterFromWidget();
@@ -78,8 +89,8 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
     }
   }
 
-  List<Activity> get _filtered {
-    var list = List<Activity>.from(_activities);
+  List<ItineraryData> get _filtered {
+    var list = List<ItineraryData>.from(_itineraries);
     if (_selectedCityId != null) {
       list = list.where((a) => a.cityId == _selectedCityId).toList();
     }
@@ -97,8 +108,8 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
     return list;
   }
 
-  Map<String, List<Activity>> get _grouped {
-    final Map<String, List<Activity>> grouped = {};
+  Map<String, List<ItineraryData>> get _grouped {
+    final Map<String, List<ItineraryData>> grouped = {};
     for (final a in _filtered) {
       final city = _cities.firstWhere(
         (c) => c.id == a.cityId,
@@ -110,41 +121,331 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
     return grouped;
   }
 
-  int? _linkedDestinationIndex(Activity item) {
-    final haystack =
-        '${item.activityType ?? ''} ${item.title} ${item.notes ?? ''}'
-            .toLowerCase();
+  DateTime _itineraryDateTime(ItineraryData item) {
+    final rawTime = item.time?.trim();
+    final hhmm = RegExp(r'^(\d{1,2}):(\d{2})').firstMatch(rawTime ?? '');
+    if (hhmm == null) return item.date;
 
-    if (haystack.contains('flight') || haystack.contains('train')) {
-      // Flights tab currently hosts transport entries.
-      return 3;
+    final hour = int.tryParse(hhmm.group(1) ?? '') ?? 0;
+    final minute = int.tryParse(hhmm.group(2) ?? '') ?? 0;
+    return DateTime(
+      item.date.year,
+      item.date.month,
+      item.date.day,
+      hour,
+      minute,
+    );
+  }
+
+  int _distanceMinutes(DateTime a, DateTime b) =>
+      a.difference(b).inMinutes.abs();
+
+  Future<ItineraryOpenRequest?> _resolveLinkedRequest(
+    ItineraryData item,
+  ) async {
+    final db = DatabaseProvider.of(context);
+
+    if (item.flightId != null) {
+      return ItineraryOpenRequest(tabIndex: 3, flightId: item.flightId);
+    }
+    if (item.trainId != null) {
+      return ItineraryOpenRequest(tabIndex: 3, trainId: item.trainId);
+    }
+    if (item.hotelId != null) {
+      return ItineraryOpenRequest(tabIndex: 4, hotelId: item.hotelId);
     }
 
-    if (haystack.contains('hotel') ||
+    final city = _cities
+        .where((c) => c.id == item.cityId)
+        .cast<City?>()
+        .firstOrNull;
+    if (city == null) return null;
+
+    final haystack = '${item.type ?? ''} ${item.title} ${item.notes ?? ''}'
+        .toLowerCase();
+    final targetTime = _itineraryDateTime(item);
+
+    final isFlight = haystack.contains('flight');
+    final isTrain = haystack.contains('train');
+    final isHotel =
+        haystack.contains('hotel') ||
         haystack.contains('check in') ||
         haystack.contains('check-in') ||
         haystack.contains('check out') ||
-        haystack.contains('checkout')) {
-      return 4;
+        haystack.contains('checkout');
+
+    if (isFlight) {
+      final allFlights = await (db.select(
+        db.flights,
+      )..where((f) => f.tripId.equals(city.tripId))).get();
+      if (allFlights.isEmpty) {
+        return const ItineraryOpenRequest(tabIndex: 3);
+      }
+
+      Flight pick = allFlights.first;
+      var best = _distanceMinutes(targetTime, pick.departure);
+      for (final f in allFlights.skip(1)) {
+        final score = [
+          _distanceMinutes(targetTime, f.departure),
+          _distanceMinutes(targetTime, f.arrival),
+        ].reduce((a, b) => a < b ? a : b);
+        if (score < best) {
+          best = score;
+          pick = f;
+        }
+      }
+
+      return ItineraryOpenRequest(tabIndex: 3, flightId: pick.id);
+    }
+
+    if (isTrain) {
+      final allTrains = await (db.select(
+        db.trains,
+      )..where((t) => t.tripId.equals(city.tripId))).get();
+      if (allTrains.isEmpty) {
+        return const ItineraryOpenRequest(tabIndex: 3);
+      }
+
+      Train pick = allTrains.first;
+      var best = _distanceMinutes(targetTime, pick.departure);
+      for (final t in allTrains.skip(1)) {
+        final score = [
+          _distanceMinutes(targetTime, t.departure),
+          _distanceMinutes(targetTime, t.arrival),
+        ].reduce((a, b) => a < b ? a : b);
+        if (score < best) {
+          best = score;
+          pick = t;
+        }
+      }
+
+      return ItineraryOpenRequest(tabIndex: 3, trainId: pick.id);
+    }
+
+    if (isHotel) {
+      final cityHotels = await (db.select(
+        db.hotels,
+      )..where((h) => h.cityId.equals(item.cityId))).get();
+      if (cityHotels.isEmpty) {
+        return const ItineraryOpenRequest(tabIndex: 4);
+      }
+
+      final byDate = cityHotels.where((h) {
+        if (h.checkIn == null || h.checkOut == null) return false;
+        final start = DateTime(
+          h.checkIn!.year,
+          h.checkIn!.month,
+          h.checkIn!.day,
+        );
+        final end = DateTime(
+          h.checkOut!.year,
+          h.checkOut!.month,
+          h.checkOut!.day,
+        );
+        final day = DateTime(item.date.year, item.date.month, item.date.day);
+        return !day.isBefore(start) && !day.isAfter(end);
+      }).toList();
+
+      final pool = byDate.isNotEmpty ? byDate : cityHotels;
+      Hotel pick = pool.first;
+      var best = pick.checkIn == null
+          ? 1 << 30
+          : _distanceMinutes(targetTime, pick.checkIn!);
+      for (final h in pool.skip(1)) {
+        final score = h.checkIn == null
+            ? 1 << 30
+            : _distanceMinutes(targetTime, h.checkIn!);
+        if (score < best) {
+          best = score;
+          pick = h;
+        }
+      }
+
+      return ItineraryOpenRequest(tabIndex: 4, hotelId: pick.id);
     }
 
     return null;
   }
 
-  bool _openLinkedDestination(Activity item) {
-    final index = _linkedDestinationIndex(item);
-    if (index == null || widget.onOpenTab == null) return false;
+  Future<bool> _openLinkedDestination(ItineraryData item) async {
+    final req = await _resolveLinkedRequest(item);
+    if (req == null || widget.onOpenLinkedView == null) return false;
 
-    widget.onOpenTab!(index);
-    final label = index == 4 ? 'Hotels' : 'Flights';
+    widget.onOpenLinkedView!(req);
+    final label = req.tabIndex == 4 ? 'Hotels' : 'Flights';
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text('Opening $label view...')));
     return true;
   }
 
-  Widget? _entrySubtitle(Activity item, ColorScheme colorScheme) {
-    final hasType = item.activityType != null && item.activityType!.isNotEmpty;
+  void _openEntryView(ItineraryData item) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final haystack = '${item.type ?? ''} ${item.title} ${item.notes ?? ''}'
+        .toLowerCase();
+    final hasDirectLink =
+        item.flightId != null || item.trainId != null || item.hotelId != null;
+    final canLink =
+        hasDirectLink ||
+        haystack.contains('flight') ||
+        haystack.contains('train') ||
+        haystack.contains('hotel') ||
+        haystack.contains('check in') ||
+        haystack.contains('check-in') ||
+        haystack.contains('check out') ||
+        haystack.contains('checkout');
+    final linkedLabel = canLink
+        ? ((item.hotelId != null ||
+                  haystack.contains('hotel') ||
+                  haystack.contains('check in') ||
+                  haystack.contains('check-in') ||
+                  haystack.contains('check out') ||
+                  haystack.contains('checkout'))
+              ? 'Hotels'
+              : 'Flights')
+        : null;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => Padding(
+        padding: EdgeInsets.fromLTRB(
+          20,
+          20,
+          20,
+          MediaQuery.of(context).viewInsets.bottom + 20,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      item.title,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Edit',
+                    icon: const Icon(Icons.edit_outlined),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _openBottomSheet(itinerary: item);
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  Chip(
+                    avatar: const Icon(Icons.access_time, size: 16),
+                    label: Text(item.time ?? '--:--'),
+                  ),
+                  if (item.type != null && item.type!.isNotEmpty)
+                    ActionChip(
+                      avatar: const Icon(Icons.label_outline, size: 16),
+                      label: Text(item.type!),
+                      onPressed: !canLink
+                          ? null
+                          : () async {
+                              final opened = await _openLinkedDestination(item);
+                              if (opened) Navigator.pop(context);
+                            },
+                    ),
+                  if (item.status != null && item.status!.isNotEmpty)
+                    _StatusChip(status: item.status!),
+                  if (item.flightId != null)
+                    Chip(
+                      avatar: const Icon(Icons.flight_outlined, size: 16),
+                      label: Text('Flight #${item.flightId}'),
+                    ),
+                  if (item.trainId != null)
+                    Chip(
+                      avatar: const Icon(Icons.train_outlined, size: 16),
+                      label: Text('Train #${item.trainId}'),
+                    ),
+                  if (item.hotelId != null)
+                    Chip(
+                      avatar: const Icon(Icons.hotel_outlined, size: 16),
+                      label: Text('Hotel #${item.hotelId}'),
+                    ),
+                ],
+              ),
+              if (linkedLabel != null) ...[
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    final opened = await _openLinkedDestination(item);
+                    if (opened) Navigator.pop(context);
+                  },
+                  icon: const Icon(Icons.open_in_new),
+                  label: Text('Open $linkedLabel view'),
+                ),
+              ],
+              const SizedBox(height: 14),
+              Text(
+                'Notes',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  (item.notes != null && item.notes!.trim().isNotEmpty)
+                      ? item.notes!.trim()
+                      : 'No notes for this entry.',
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  TextButton.icon(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                    label: const Text('Close'),
+                  ),
+                  const Spacer(),
+                  FilledButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _openBottomSheet(itinerary: item);
+                    },
+                    icon: const Icon(Icons.edit),
+                    label: const Text('Edit'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget? _entrySubtitle(ItineraryData item, ColorScheme colorScheme) {
+    final hasType = item.type != null && item.type!.isNotEmpty;
     final hasStatus = item.status != null && item.status!.isNotEmpty;
     final hasNotes = item.notes != null && item.notes!.trim().isNotEmpty;
 
@@ -165,7 +466,7 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  item.activityType!,
+                  item.type!,
                   style: TextStyle(
                     fontSize: 12,
                     color: colorScheme.onSurfaceVariant,
@@ -191,7 +492,7 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
     );
   }
 
-  void _openBottomSheet({Activity? activity}) {
+  void _openBottomSheet({ItineraryData? itinerary}) {
     if (_cities.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -208,19 +509,19 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => _ActivityForm(
-        activity: activity,
+      builder: (_) => _ItineraryForm(
+        itinerary: itinerary,
         cities: _cities,
         onSaved: _loadData,
       ),
     );
   }
 
-  Future<void> _deleteActivity(Activity a) async {
+  Future<void> _deleteItinerary(ItineraryData a) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Delete activity?'),
+        title: const Text('Delete itinerary entry?'),
         content: Text('This will permanently delete "${a.title}".'),
         actions: [
           TextButton(
@@ -239,7 +540,7 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
     );
     if (confirmed == true && mounted) {
       final db = DatabaseProvider.of(context);
-      await (db.delete(db.activities)..where((a2) => a2.id.equals(a.id))).go();
+      await (db.delete(db.itinerary)..where((a2) => a2.id.equals(a.id))).go();
       _loadData();
     }
   }
@@ -296,7 +597,7 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
             const SliverFillRemaining(
               child: Center(child: CircularProgressIndicator()),
             )
-          else if (_activities.isEmpty)
+          else if (_itineraries.isEmpty)
             SliverFillRemaining(
               child: Center(
                 child: Column(
@@ -372,11 +673,19 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                                     children: [
                                       IconButton(
                                         icon: const Icon(
+                                          Icons.visibility_outlined,
+                                          size: 18,
+                                        ),
+                                        tooltip: 'View',
+                                        onPressed: () => _openEntryView(item),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(
                                           Icons.edit_outlined,
                                           size: 18,
                                         ),
                                         onPressed: () =>
-                                            _openBottomSheet(activity: item),
+                                            _openBottomSheet(itinerary: item),
                                       ),
                                       IconButton(
                                         icon: Icon(
@@ -384,14 +693,12 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                                           size: 18,
                                           color: colorScheme.error,
                                         ),
-                                        onPressed: () => _deleteActivity(item),
+                                        onPressed: () => _deleteItinerary(item),
                                       ),
                                     ],
                                   ),
                                   onTap: () {
-                                    if (!_openLinkedDestination(item)) {
-                                      _openBottomSheet(activity: item);
-                                    }
+                                    _openEntryView(item);
                                   },
                                 ),
                                 if (i < entries.length - 1)
@@ -417,7 +724,7 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _cities.isEmpty ? null : () => _openBottomSheet(),
         icon: const Icon(Icons.add),
-        label: const Text('Add activity'),
+        label: const Text('Add itinerary entry'),
       ),
     );
   }
@@ -467,29 +774,32 @@ class _StatusChip extends StatelessWidget {
   }
 }
 
-// ── ACTIVITY FORM (BOTTOM SHEET) ──────────────────────────────────────────────
-class _ActivityForm extends StatefulWidget {
-  final Activity? activity;
+// ── ITINERARY FORM (BOTTOM SHEET) ──────────────────────────────────────────────
+class _ItineraryForm extends StatefulWidget {
+  final ItineraryData? itinerary;
   final List<City> cities;
   final VoidCallback onSaved;
 
-  const _ActivityForm({
-    this.activity,
+  const _ItineraryForm({
+    this.itinerary,
     required this.cities,
     required this.onSaved,
   });
 
   @override
-  State<_ActivityForm> createState() => _ActivityFormState();
+  State<_ItineraryForm> createState() => _ItineraryFormState();
 }
 
-class _ActivityFormState extends State<_ActivityForm> {
+class _ItineraryFormState extends State<_ItineraryForm> {
   late TextEditingController _title;
   late TextEditingController _time;
   late TextEditingController _location;
   late TextEditingController _notes;
   late TextEditingController _url;
   late TextEditingController _price;
+  late TextEditingController _flightId;
+  late TextEditingController _trainId;
+  late TextEditingController _hotelId;
   int? _selectedCityId;
   DateTime? _selectedDate;
   String? _selectedType;
@@ -519,16 +829,19 @@ class _ActivityFormState extends State<_ActivityForm> {
   @override
   void initState() {
     super.initState();
-    final a = widget.activity;
+    final a = widget.itinerary;
     _title = TextEditingController(text: a?.title ?? '');
     _time = TextEditingController(text: a?.time ?? '');
     _location = TextEditingController(text: a?.location ?? '');
     _notes = TextEditingController(text: a?.notes ?? '');
     _url = TextEditingController(text: a?.url ?? '');
     _price = TextEditingController(text: a?.price?.toString() ?? '');
+    _flightId = TextEditingController(text: a?.flightId?.toString() ?? '');
+    _trainId = TextEditingController(text: a?.trainId?.toString() ?? '');
+    _hotelId = TextEditingController(text: a?.hotelId?.toString() ?? '');
     _selectedCityId = a?.cityId ?? widget.cities.firstOrNull?.id;
     _selectedDate = a?.date ?? DateTime.now();
-    _selectedType = a?.activityType;
+    _selectedType = a?.type;
     _selectedStatus = a?.status;
   }
 
@@ -540,6 +853,9 @@ class _ActivityFormState extends State<_ActivityForm> {
     _notes.dispose();
     _url.dispose();
     _price.dispose();
+    _flightId.dispose();
+    _trainId.dispose();
+    _hotelId.dispose();
     super.dispose();
   }
 
@@ -559,12 +875,12 @@ class _ActivityFormState extends State<_ActivityForm> {
 
     final cityId = _selectedCityId ?? widget.cities.first.id;
     final db = DatabaseProvider.of(context);
-    final companion = ActivitiesCompanion(
+    final companion = ItineraryCompanion(
       cityId: Value(cityId),
       date: Value(_selectedDate ?? DateTime.now()),
       time: Value(_time.text.trim().isEmpty ? null : _time.text.trim()),
       title: Value(_title.text.trim()),
-      activityType: Value(_selectedType),
+      type: Value(_selectedType),
       location: Value(
         _location.text.trim().isEmpty ? null : _location.text.trim(),
       ),
@@ -572,14 +888,17 @@ class _ActivityFormState extends State<_ActivityForm> {
       url: Value(_url.text.trim().isEmpty ? null : _url.text.trim()),
       price: Value(double.tryParse(_price.text.trim())),
       status: Value(_selectedStatus),
+      flightId: Value(int.tryParse(_flightId.text.trim())),
+      trainId: Value(int.tryParse(_trainId.text.trim())),
+      hotelId: Value(int.tryParse(_hotelId.text.trim())),
     );
 
-    if (widget.activity == null) {
-      await db.into(db.activities).insert(companion);
+    if (widget.itinerary == null) {
+      await db.into(db.itinerary).insert(companion);
     } else {
       await (db.update(
-        db.activities,
-      )..where((a) => a.id.equals(widget.activity!.id))).write(companion);
+        db.itinerary,
+      )..where((a) => a.id.equals(widget.itinerary!.id))).write(companion);
     }
     if (mounted) {
       Navigator.pop(context);
@@ -591,7 +910,7 @@ class _ActivityFormState extends State<_ActivityForm> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final isEdit = widget.activity != null;
+    final isEdit = widget.itinerary != null;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -617,7 +936,7 @@ class _ActivityFormState extends State<_ActivityForm> {
               ),
             ),
             Text(
-              isEdit ? 'Edit activity' : 'New activity',
+              isEdit ? 'Edit itinerary entry' : 'New itinerary entry',
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -778,6 +1097,53 @@ class _ActivityFormState extends State<_ActivityForm> {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 12),
+
+            Text(
+              'Linked records (optional IDs)',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: colorScheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _flightId,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Flight ID',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.flight_outlined),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    controller: _trainId,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Train ID',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.train_outlined),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _hotelId,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Hotel ID',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.hotel_outlined),
+              ),
             ),
             const SizedBox(height: 20),
 

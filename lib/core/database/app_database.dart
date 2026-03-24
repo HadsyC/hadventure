@@ -13,18 +13,19 @@ part 'app_database.g.dart';
     Contacts,
     Cities,
     Hotels,
-    Activities,
+    Itinerary,
     Flights,
     Trains,
     PackingItems,
     TripTips,
+    Locations,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -45,6 +46,28 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(trains, trains.totalPricePerPerson);
       }
 
+      if (from < 3) {
+        await m.addColumn(itinerary, itinerary.flightId);
+        await m.addColumn(itinerary, itinerary.trainId);
+        await m.addColumn(itinerary, itinerary.hotelId);
+      }
+
+      if (from < 4) {
+        // Add image support to existing tables
+        await m.addColumn(cities, cities.cityImage);
+        await m.addColumn(hotels, hotels.hotelImage);
+        await m.addColumn(itinerary, itinerary.image);
+
+        // Add bilingual address fields to hotels
+        await m.addColumn(hotels, hotels.addressEn);
+        await m.addColumn(hotels, hotels.addressLocal);
+        await m.addColumn(hotels, hotels.phone);
+        await m.addColumn(hotels, hotels.website);
+
+        // Create new Locations table for map pins with bilingual addresses
+        await m.createTable(locations);
+      }
+
       // Some earlier schema v1 databases missed nullable columns despite
       // version number not changing; repair them defensively.
       await _repairLegacyColumns(this);
@@ -58,6 +81,16 @@ class AppDatabase extends _$AppDatabase {
 
 Future<void> _repairLegacyColumns(AppDatabase db) async {
   await _addColumnIfMissing(db, 'cities', 'notes', 'TEXT');
+  await _addColumnIfMissing(db, 'cities', 'city_image', 'TEXT');
+  await _addColumnIfMissing(db, 'itinerary', 'flight_id', 'INTEGER');
+  await _addColumnIfMissing(db, 'itinerary', 'train_id', 'INTEGER');
+  await _addColumnIfMissing(db, 'itinerary', 'hotel_id', 'INTEGER');
+  await _addColumnIfMissing(db, 'itinerary', 'image', 'TEXT');
+  await _addColumnIfMissing(db, 'hotels', 'hotel_image', 'TEXT');
+  await _addColumnIfMissing(db, 'hotels', 'address_en', 'TEXT');
+  await _addColumnIfMissing(db, 'hotels', 'address_local', 'TEXT');
+  await _addColumnIfMissing(db, 'hotels', 'phone', 'TEXT');
+  await _addColumnIfMissing(db, 'hotels', 'website', 'TEXT');
 }
 
 Future<void> _addColumnIfMissing(

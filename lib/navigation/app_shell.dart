@@ -18,12 +18,25 @@ class _AppShellState extends State<AppShell> {
   int _selectedIndex = 0;
   String? _filterCity;
   DateTime? _filterDate;
+  int? _selectedFlightId;
+  int? _selectedTrainId;
+  int? _selectedHotelId;
 
-  void _navigateTo(int index, {String? city, DateTime? date}) {
+  void _navigateTo(
+    int index, {
+    String? city,
+    DateTime? date,
+    int? flightId,
+    int? trainId,
+    int? hotelId,
+  }) {
     setState(() {
       _selectedIndex = index;
       _filterCity = city;
       _filterDate = date;
+      _selectedFlightId = flightId;
+      _selectedTrainId = trainId;
+      _selectedHotelId = hotelId;
     });
   }
 
@@ -32,11 +45,19 @@ class _AppShellState extends State<AppShell> {
     ItineraryScreen(
       filterCity: _filterCity,
       filterDate: _filterDate,
-      onOpenTab: (index) => _navigateTo(index),
+      onOpenLinkedView: (req) => _navigateTo(
+        req.tabIndex,
+        flightId: req.flightId,
+        trainId: req.trainId,
+        hotelId: req.hotelId,
+      ),
     ),
     const MapScreen(),
-    const FlightsScreen(),
-    const HotelsScreen(),
+    FlightsScreen(
+      highlightedFlightId: _selectedFlightId,
+      highlightedTrainId: _selectedTrainId,
+    ),
+    HotelsScreen(highlightedHotelId: _selectedHotelId),
     const SettingsScreen(),
     const DataScreen(),
   ];
@@ -82,6 +103,9 @@ class _AppShellState extends State<AppShell> {
                 _selectedIndex = i;
                 _filterCity = null;
                 _filterDate = null;
+                _selectedFlightId = null;
+                _selectedTrainId = null;
+                _selectedHotelId = null;
               }),
               labelType: NavigationRailLabelType.none,
               minWidth: 64,
@@ -124,6 +148,9 @@ class _AppShellState extends State<AppShell> {
           _selectedIndex = i;
           _filterCity = null;
           _filterDate = null;
+          _selectedFlightId = null;
+          _selectedTrainId = null;
+          _selectedHotelId = null;
         }),
         destinations: _destinations
             .map(

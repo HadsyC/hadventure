@@ -1044,6 +1044,17 @@ class $CitiesTable extends Cities with TableInfo<$CitiesTable, City> {
         type: DriftSqlType.dateTime,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _cityImageMeta = const VerificationMeta(
+    'cityImage',
+  );
+  @override
+  late final GeneratedColumn<String> cityImage = GeneratedColumn<String>(
+    'city_image',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     tripId,
@@ -1055,6 +1066,7 @@ class $CitiesTable extends Cities with TableInfo<$CitiesTable, City> {
     notes,
     arrivalDate,
     departureDate,
+    cityImage,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1131,6 +1143,12 @@ class $CitiesTable extends Cities with TableInfo<$CitiesTable, City> {
         ),
       );
     }
+    if (data.containsKey('city_image')) {
+      context.handle(
+        _cityImageMeta,
+        cityImage.isAcceptableOrUnknown(data['city_image']!, _cityImageMeta),
+      );
+    }
     return context;
   }
 
@@ -1176,6 +1194,10 @@ class $CitiesTable extends Cities with TableInfo<$CitiesTable, City> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}departure_date'],
       ),
+      cityImage: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}city_image'],
+      ),
     );
   }
 
@@ -1195,6 +1217,7 @@ class City extends DataClass implements Insertable<City> {
   final String? notes;
   final DateTime? arrivalDate;
   final DateTime? departureDate;
+  final String? cityImage;
   const City({
     required this.tripId,
     this.lat,
@@ -1205,6 +1228,7 @@ class City extends DataClass implements Insertable<City> {
     this.notes,
     this.arrivalDate,
     this.departureDate,
+    this.cityImage,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1228,6 +1252,9 @@ class City extends DataClass implements Insertable<City> {
     if (!nullToAbsent || departureDate != null) {
       map['departure_date'] = Variable<DateTime>(departureDate);
     }
+    if (!nullToAbsent || cityImage != null) {
+      map['city_image'] = Variable<String>(cityImage);
+    }
     return map;
   }
 
@@ -1248,6 +1275,9 @@ class City extends DataClass implements Insertable<City> {
       departureDate: departureDate == null && nullToAbsent
           ? const Value.absent()
           : Value(departureDate),
+      cityImage: cityImage == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cityImage),
     );
   }
 
@@ -1266,6 +1296,7 @@ class City extends DataClass implements Insertable<City> {
       notes: serializer.fromJson<String?>(json['notes']),
       arrivalDate: serializer.fromJson<DateTime?>(json['arrivalDate']),
       departureDate: serializer.fromJson<DateTime?>(json['departureDate']),
+      cityImage: serializer.fromJson<String?>(json['cityImage']),
     );
   }
   @override
@@ -1281,6 +1312,7 @@ class City extends DataClass implements Insertable<City> {
       'notes': serializer.toJson<String?>(notes),
       'arrivalDate': serializer.toJson<DateTime?>(arrivalDate),
       'departureDate': serializer.toJson<DateTime?>(departureDate),
+      'cityImage': serializer.toJson<String?>(cityImage),
     };
   }
 
@@ -1294,6 +1326,7 @@ class City extends DataClass implements Insertable<City> {
     Value<String?> notes = const Value.absent(),
     Value<DateTime?> arrivalDate = const Value.absent(),
     Value<DateTime?> departureDate = const Value.absent(),
+    Value<String?> cityImage = const Value.absent(),
   }) => City(
     tripId: tripId ?? this.tripId,
     lat: lat.present ? lat.value : this.lat,
@@ -1306,6 +1339,7 @@ class City extends DataClass implements Insertable<City> {
     departureDate: departureDate.present
         ? departureDate.value
         : this.departureDate,
+    cityImage: cityImage.present ? cityImage.value : this.cityImage,
   );
   City copyWithCompanion(CitiesCompanion data) {
     return City(
@@ -1322,6 +1356,7 @@ class City extends DataClass implements Insertable<City> {
       departureDate: data.departureDate.present
           ? data.departureDate.value
           : this.departureDate,
+      cityImage: data.cityImage.present ? data.cityImage.value : this.cityImage,
     );
   }
 
@@ -1336,7 +1371,8 @@ class City extends DataClass implements Insertable<City> {
           ..write('country: $country, ')
           ..write('notes: $notes, ')
           ..write('arrivalDate: $arrivalDate, ')
-          ..write('departureDate: $departureDate')
+          ..write('departureDate: $departureDate, ')
+          ..write('cityImage: $cityImage')
           ..write(')'))
         .toString();
   }
@@ -1352,6 +1388,7 @@ class City extends DataClass implements Insertable<City> {
     notes,
     arrivalDate,
     departureDate,
+    cityImage,
   );
   @override
   bool operator ==(Object other) =>
@@ -1365,7 +1402,8 @@ class City extends DataClass implements Insertable<City> {
           other.country == this.country &&
           other.notes == this.notes &&
           other.arrivalDate == this.arrivalDate &&
-          other.departureDate == this.departureDate);
+          other.departureDate == this.departureDate &&
+          other.cityImage == this.cityImage);
 }
 
 class CitiesCompanion extends UpdateCompanion<City> {
@@ -1378,6 +1416,7 @@ class CitiesCompanion extends UpdateCompanion<City> {
   final Value<String?> notes;
   final Value<DateTime?> arrivalDate;
   final Value<DateTime?> departureDate;
+  final Value<String?> cityImage;
   const CitiesCompanion({
     this.tripId = const Value.absent(),
     this.lat = const Value.absent(),
@@ -1388,6 +1427,7 @@ class CitiesCompanion extends UpdateCompanion<City> {
     this.notes = const Value.absent(),
     this.arrivalDate = const Value.absent(),
     this.departureDate = const Value.absent(),
+    this.cityImage = const Value.absent(),
   });
   CitiesCompanion.insert({
     required int tripId,
@@ -1399,6 +1439,7 @@ class CitiesCompanion extends UpdateCompanion<City> {
     this.notes = const Value.absent(),
     this.arrivalDate = const Value.absent(),
     this.departureDate = const Value.absent(),
+    this.cityImage = const Value.absent(),
   }) : tripId = Value(tripId),
        name = Value(name),
        country = Value(country);
@@ -1412,6 +1453,7 @@ class CitiesCompanion extends UpdateCompanion<City> {
     Expression<String>? notes,
     Expression<DateTime>? arrivalDate,
     Expression<DateTime>? departureDate,
+    Expression<String>? cityImage,
   }) {
     return RawValuesInsertable({
       if (tripId != null) 'trip_id': tripId,
@@ -1423,6 +1465,7 @@ class CitiesCompanion extends UpdateCompanion<City> {
       if (notes != null) 'notes': notes,
       if (arrivalDate != null) 'arrival_date': arrivalDate,
       if (departureDate != null) 'departure_date': departureDate,
+      if (cityImage != null) 'city_image': cityImage,
     });
   }
 
@@ -1436,6 +1479,7 @@ class CitiesCompanion extends UpdateCompanion<City> {
     Value<String?>? notes,
     Value<DateTime?>? arrivalDate,
     Value<DateTime?>? departureDate,
+    Value<String?>? cityImage,
   }) {
     return CitiesCompanion(
       tripId: tripId ?? this.tripId,
@@ -1447,6 +1491,7 @@ class CitiesCompanion extends UpdateCompanion<City> {
       notes: notes ?? this.notes,
       arrivalDate: arrivalDate ?? this.arrivalDate,
       departureDate: departureDate ?? this.departureDate,
+      cityImage: cityImage ?? this.cityImage,
     );
   }
 
@@ -1480,6 +1525,9 @@ class CitiesCompanion extends UpdateCompanion<City> {
     if (departureDate.present) {
       map['departure_date'] = Variable<DateTime>(departureDate.value);
     }
+    if (cityImage.present) {
+      map['city_image'] = Variable<String>(cityImage.value);
+    }
     return map;
   }
 
@@ -1494,7 +1542,8 @@ class CitiesCompanion extends UpdateCompanion<City> {
           ..write('country: $country, ')
           ..write('notes: $notes, ')
           ..write('arrivalDate: $arrivalDate, ')
-          ..write('departureDate: $departureDate')
+          ..write('departureDate: $departureDate, ')
+          ..write('cityImage: $cityImage')
           ..write(')'))
         .toString();
   }
@@ -1533,48 +1582,6 @@ class $HotelsTable extends Hotels with TableInfo<$HotelsTable, Hotel> {
     aliasedName,
     true,
     type: DriftSqlType.double,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _addressMeta = const VerificationMeta(
-    'address',
-  );
-  @override
-  late final GeneratedColumn<String> address = GeneratedColumn<String>(
-    'address',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _localAddressMeta = const VerificationMeta(
-    'localAddress',
-  );
-  @override
-  late final GeneratedColumn<String> localAddress = GeneratedColumn<String>(
-    'local_address',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _phoneMeta = const VerificationMeta('phone');
-  @override
-  late final GeneratedColumn<String> phone = GeneratedColumn<String>(
-    'phone',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _websiteMeta = const VerificationMeta(
-    'website',
-  );
-  @override
-  late final GeneratedColumn<String> website = GeneratedColumn<String>(
-    'website',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
   static const VerificationMeta _idMeta = const VerificationMeta('id');
@@ -1707,15 +1714,64 @@ class $HotelsTable extends Hotels with TableInfo<$HotelsTable, Hotel> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _hotelImageMeta = const VerificationMeta(
+    'hotelImage',
+  );
+  @override
+  late final GeneratedColumn<String> hotelImage = GeneratedColumn<String>(
+    'hotel_image',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _addressEnMeta = const VerificationMeta(
+    'addressEn',
+  );
+  @override
+  late final GeneratedColumn<String> addressEn = GeneratedColumn<String>(
+    'address_en',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _addressLocalMeta = const VerificationMeta(
+    'addressLocal',
+  );
+  @override
+  late final GeneratedColumn<String> addressLocal = GeneratedColumn<String>(
+    'address_local',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _phoneMeta = const VerificationMeta('phone');
+  @override
+  late final GeneratedColumn<String> phone = GeneratedColumn<String>(
+    'phone',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _websiteMeta = const VerificationMeta(
+    'website',
+  );
+  @override
+  late final GeneratedColumn<String> website = GeneratedColumn<String>(
+    'website',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     cityId,
     lat,
     lng,
-    address,
-    localAddress,
-    phone,
-    website,
     id,
     name,
     localName,
@@ -1728,6 +1784,11 @@ class $HotelsTable extends Hotels with TableInfo<$HotelsTable, Hotel> {
     pricePerPerson,
     pricePerPersonNight,
     mapUrl,
+    hotelImage,
+    addressEn,
+    addressLocal,
+    phone,
+    website,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1759,33 +1820,6 @@ class $HotelsTable extends Hotels with TableInfo<$HotelsTable, Hotel> {
       context.handle(
         _lngMeta,
         lng.isAcceptableOrUnknown(data['lng']!, _lngMeta),
-      );
-    }
-    if (data.containsKey('address')) {
-      context.handle(
-        _addressMeta,
-        address.isAcceptableOrUnknown(data['address']!, _addressMeta),
-      );
-    }
-    if (data.containsKey('local_address')) {
-      context.handle(
-        _localAddressMeta,
-        localAddress.isAcceptableOrUnknown(
-          data['local_address']!,
-          _localAddressMeta,
-        ),
-      );
-    }
-    if (data.containsKey('phone')) {
-      context.handle(
-        _phoneMeta,
-        phone.isAcceptableOrUnknown(data['phone']!, _phoneMeta),
-      );
-    }
-    if (data.containsKey('website')) {
-      context.handle(
-        _websiteMeta,
-        website.isAcceptableOrUnknown(data['website']!, _websiteMeta),
       );
     }
     if (data.containsKey('id')) {
@@ -1874,6 +1908,39 @@ class $HotelsTable extends Hotels with TableInfo<$HotelsTable, Hotel> {
         mapUrl.isAcceptableOrUnknown(data['map_url']!, _mapUrlMeta),
       );
     }
+    if (data.containsKey('hotel_image')) {
+      context.handle(
+        _hotelImageMeta,
+        hotelImage.isAcceptableOrUnknown(data['hotel_image']!, _hotelImageMeta),
+      );
+    }
+    if (data.containsKey('address_en')) {
+      context.handle(
+        _addressEnMeta,
+        addressEn.isAcceptableOrUnknown(data['address_en']!, _addressEnMeta),
+      );
+    }
+    if (data.containsKey('address_local')) {
+      context.handle(
+        _addressLocalMeta,
+        addressLocal.isAcceptableOrUnknown(
+          data['address_local']!,
+          _addressLocalMeta,
+        ),
+      );
+    }
+    if (data.containsKey('phone')) {
+      context.handle(
+        _phoneMeta,
+        phone.isAcceptableOrUnknown(data['phone']!, _phoneMeta),
+      );
+    }
+    if (data.containsKey('website')) {
+      context.handle(
+        _websiteMeta,
+        website.isAcceptableOrUnknown(data['website']!, _websiteMeta),
+      );
+    }
     return context;
   }
 
@@ -1894,22 +1961,6 @@ class $HotelsTable extends Hotels with TableInfo<$HotelsTable, Hotel> {
       lng: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}lng'],
-      ),
-      address: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}address'],
-      ),
-      localAddress: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}local_address'],
-      ),
-      phone: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}phone'],
-      ),
-      website: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}website'],
       ),
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
@@ -1959,6 +2010,26 @@ class $HotelsTable extends Hotels with TableInfo<$HotelsTable, Hotel> {
         DriftSqlType.string,
         data['${effectivePrefix}map_url'],
       ),
+      hotelImage: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}hotel_image'],
+      ),
+      addressEn: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}address_en'],
+      ),
+      addressLocal: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}address_local'],
+      ),
+      phone: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}phone'],
+      ),
+      website: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}website'],
+      ),
     );
   }
 
@@ -1972,10 +2043,6 @@ class Hotel extends DataClass implements Insertable<Hotel> {
   final int cityId;
   final double? lat;
   final double? lng;
-  final String? address;
-  final String? localAddress;
-  final String? phone;
-  final String? website;
   final int id;
   final String name;
   final String? localName;
@@ -1988,14 +2055,15 @@ class Hotel extends DataClass implements Insertable<Hotel> {
   final double? pricePerPerson;
   final double? pricePerPersonNight;
   final String? mapUrl;
+  final String? hotelImage;
+  final String? addressEn;
+  final String? addressLocal;
+  final String? phone;
+  final String? website;
   const Hotel({
     required this.cityId,
     this.lat,
     this.lng,
-    this.address,
-    this.localAddress,
-    this.phone,
-    this.website,
     required this.id,
     required this.name,
     this.localName,
@@ -2008,6 +2076,11 @@ class Hotel extends DataClass implements Insertable<Hotel> {
     this.pricePerPerson,
     this.pricePerPersonNight,
     this.mapUrl,
+    this.hotelImage,
+    this.addressEn,
+    this.addressLocal,
+    this.phone,
+    this.website,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2018,18 +2091,6 @@ class Hotel extends DataClass implements Insertable<Hotel> {
     }
     if (!nullToAbsent || lng != null) {
       map['lng'] = Variable<double>(lng);
-    }
-    if (!nullToAbsent || address != null) {
-      map['address'] = Variable<String>(address);
-    }
-    if (!nullToAbsent || localAddress != null) {
-      map['local_address'] = Variable<String>(localAddress);
-    }
-    if (!nullToAbsent || phone != null) {
-      map['phone'] = Variable<String>(phone);
-    }
-    if (!nullToAbsent || website != null) {
-      map['website'] = Variable<String>(website);
     }
     map['id'] = Variable<int>(id);
     map['name'] = Variable<String>(name);
@@ -2063,6 +2124,21 @@ class Hotel extends DataClass implements Insertable<Hotel> {
     if (!nullToAbsent || mapUrl != null) {
       map['map_url'] = Variable<String>(mapUrl);
     }
+    if (!nullToAbsent || hotelImage != null) {
+      map['hotel_image'] = Variable<String>(hotelImage);
+    }
+    if (!nullToAbsent || addressEn != null) {
+      map['address_en'] = Variable<String>(addressEn);
+    }
+    if (!nullToAbsent || addressLocal != null) {
+      map['address_local'] = Variable<String>(addressLocal);
+    }
+    if (!nullToAbsent || phone != null) {
+      map['phone'] = Variable<String>(phone);
+    }
+    if (!nullToAbsent || website != null) {
+      map['website'] = Variable<String>(website);
+    }
     return map;
   }
 
@@ -2071,18 +2147,6 @@ class Hotel extends DataClass implements Insertable<Hotel> {
       cityId: Value(cityId),
       lat: lat == null && nullToAbsent ? const Value.absent() : Value(lat),
       lng: lng == null && nullToAbsent ? const Value.absent() : Value(lng),
-      address: address == null && nullToAbsent
-          ? const Value.absent()
-          : Value(address),
-      localAddress: localAddress == null && nullToAbsent
-          ? const Value.absent()
-          : Value(localAddress),
-      phone: phone == null && nullToAbsent
-          ? const Value.absent()
-          : Value(phone),
-      website: website == null && nullToAbsent
-          ? const Value.absent()
-          : Value(website),
       id: Value(id),
       name: Value(name),
       localName: localName == null && nullToAbsent
@@ -2115,6 +2179,21 @@ class Hotel extends DataClass implements Insertable<Hotel> {
       mapUrl: mapUrl == null && nullToAbsent
           ? const Value.absent()
           : Value(mapUrl),
+      hotelImage: hotelImage == null && nullToAbsent
+          ? const Value.absent()
+          : Value(hotelImage),
+      addressEn: addressEn == null && nullToAbsent
+          ? const Value.absent()
+          : Value(addressEn),
+      addressLocal: addressLocal == null && nullToAbsent
+          ? const Value.absent()
+          : Value(addressLocal),
+      phone: phone == null && nullToAbsent
+          ? const Value.absent()
+          : Value(phone),
+      website: website == null && nullToAbsent
+          ? const Value.absent()
+          : Value(website),
     );
   }
 
@@ -2127,10 +2206,6 @@ class Hotel extends DataClass implements Insertable<Hotel> {
       cityId: serializer.fromJson<int>(json['cityId']),
       lat: serializer.fromJson<double?>(json['lat']),
       lng: serializer.fromJson<double?>(json['lng']),
-      address: serializer.fromJson<String?>(json['address']),
-      localAddress: serializer.fromJson<String?>(json['localAddress']),
-      phone: serializer.fromJson<String?>(json['phone']),
-      website: serializer.fromJson<String?>(json['website']),
       id: serializer.fromJson<int>(json['id']),
       name: serializer.fromJson<String>(json['name']),
       localName: serializer.fromJson<String?>(json['localName']),
@@ -2145,6 +2220,11 @@ class Hotel extends DataClass implements Insertable<Hotel> {
         json['pricePerPersonNight'],
       ),
       mapUrl: serializer.fromJson<String?>(json['mapUrl']),
+      hotelImage: serializer.fromJson<String?>(json['hotelImage']),
+      addressEn: serializer.fromJson<String?>(json['addressEn']),
+      addressLocal: serializer.fromJson<String?>(json['addressLocal']),
+      phone: serializer.fromJson<String?>(json['phone']),
+      website: serializer.fromJson<String?>(json['website']),
     );
   }
   @override
@@ -2154,10 +2234,6 @@ class Hotel extends DataClass implements Insertable<Hotel> {
       'cityId': serializer.toJson<int>(cityId),
       'lat': serializer.toJson<double?>(lat),
       'lng': serializer.toJson<double?>(lng),
-      'address': serializer.toJson<String?>(address),
-      'localAddress': serializer.toJson<String?>(localAddress),
-      'phone': serializer.toJson<String?>(phone),
-      'website': serializer.toJson<String?>(website),
       'id': serializer.toJson<int>(id),
       'name': serializer.toJson<String>(name),
       'localName': serializer.toJson<String?>(localName),
@@ -2170,6 +2246,11 @@ class Hotel extends DataClass implements Insertable<Hotel> {
       'pricePerPerson': serializer.toJson<double?>(pricePerPerson),
       'pricePerPersonNight': serializer.toJson<double?>(pricePerPersonNight),
       'mapUrl': serializer.toJson<String?>(mapUrl),
+      'hotelImage': serializer.toJson<String?>(hotelImage),
+      'addressEn': serializer.toJson<String?>(addressEn),
+      'addressLocal': serializer.toJson<String?>(addressLocal),
+      'phone': serializer.toJson<String?>(phone),
+      'website': serializer.toJson<String?>(website),
     };
   }
 
@@ -2177,10 +2258,6 @@ class Hotel extends DataClass implements Insertable<Hotel> {
     int? cityId,
     Value<double?> lat = const Value.absent(),
     Value<double?> lng = const Value.absent(),
-    Value<String?> address = const Value.absent(),
-    Value<String?> localAddress = const Value.absent(),
-    Value<String?> phone = const Value.absent(),
-    Value<String?> website = const Value.absent(),
     int? id,
     String? name,
     Value<String?> localName = const Value.absent(),
@@ -2193,14 +2270,15 @@ class Hotel extends DataClass implements Insertable<Hotel> {
     Value<double?> pricePerPerson = const Value.absent(),
     Value<double?> pricePerPersonNight = const Value.absent(),
     Value<String?> mapUrl = const Value.absent(),
+    Value<String?> hotelImage = const Value.absent(),
+    Value<String?> addressEn = const Value.absent(),
+    Value<String?> addressLocal = const Value.absent(),
+    Value<String?> phone = const Value.absent(),
+    Value<String?> website = const Value.absent(),
   }) => Hotel(
     cityId: cityId ?? this.cityId,
     lat: lat.present ? lat.value : this.lat,
     lng: lng.present ? lng.value : this.lng,
-    address: address.present ? address.value : this.address,
-    localAddress: localAddress.present ? localAddress.value : this.localAddress,
-    phone: phone.present ? phone.value : this.phone,
-    website: website.present ? website.value : this.website,
     id: id ?? this.id,
     name: name ?? this.name,
     localName: localName.present ? localName.value : this.localName,
@@ -2217,18 +2295,17 @@ class Hotel extends DataClass implements Insertable<Hotel> {
         ? pricePerPersonNight.value
         : this.pricePerPersonNight,
     mapUrl: mapUrl.present ? mapUrl.value : this.mapUrl,
+    hotelImage: hotelImage.present ? hotelImage.value : this.hotelImage,
+    addressEn: addressEn.present ? addressEn.value : this.addressEn,
+    addressLocal: addressLocal.present ? addressLocal.value : this.addressLocal,
+    phone: phone.present ? phone.value : this.phone,
+    website: website.present ? website.value : this.website,
   );
   Hotel copyWithCompanion(HotelsCompanion data) {
     return Hotel(
       cityId: data.cityId.present ? data.cityId.value : this.cityId,
       lat: data.lat.present ? data.lat.value : this.lat,
       lng: data.lng.present ? data.lng.value : this.lng,
-      address: data.address.present ? data.address.value : this.address,
-      localAddress: data.localAddress.present
-          ? data.localAddress.value
-          : this.localAddress,
-      phone: data.phone.present ? data.phone.value : this.phone,
-      website: data.website.present ? data.website.value : this.website,
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
       localName: data.localName.present ? data.localName.value : this.localName,
@@ -2253,6 +2330,15 @@ class Hotel extends DataClass implements Insertable<Hotel> {
           ? data.pricePerPersonNight.value
           : this.pricePerPersonNight,
       mapUrl: data.mapUrl.present ? data.mapUrl.value : this.mapUrl,
+      hotelImage: data.hotelImage.present
+          ? data.hotelImage.value
+          : this.hotelImage,
+      addressEn: data.addressEn.present ? data.addressEn.value : this.addressEn,
+      addressLocal: data.addressLocal.present
+          ? data.addressLocal.value
+          : this.addressLocal,
+      phone: data.phone.present ? data.phone.value : this.phone,
+      website: data.website.present ? data.website.value : this.website,
     );
   }
 
@@ -2262,10 +2348,6 @@ class Hotel extends DataClass implements Insertable<Hotel> {
           ..write('cityId: $cityId, ')
           ..write('lat: $lat, ')
           ..write('lng: $lng, ')
-          ..write('address: $address, ')
-          ..write('localAddress: $localAddress, ')
-          ..write('phone: $phone, ')
-          ..write('website: $website, ')
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('localName: $localName, ')
@@ -2277,7 +2359,12 @@ class Hotel extends DataClass implements Insertable<Hotel> {
           ..write('totalPrice: $totalPrice, ')
           ..write('pricePerPerson: $pricePerPerson, ')
           ..write('pricePerPersonNight: $pricePerPersonNight, ')
-          ..write('mapUrl: $mapUrl')
+          ..write('mapUrl: $mapUrl, ')
+          ..write('hotelImage: $hotelImage, ')
+          ..write('addressEn: $addressEn, ')
+          ..write('addressLocal: $addressLocal, ')
+          ..write('phone: $phone, ')
+          ..write('website: $website')
           ..write(')'))
         .toString();
   }
@@ -2287,10 +2374,6 @@ class Hotel extends DataClass implements Insertable<Hotel> {
     cityId,
     lat,
     lng,
-    address,
-    localAddress,
-    phone,
-    website,
     id,
     name,
     localName,
@@ -2303,6 +2386,11 @@ class Hotel extends DataClass implements Insertable<Hotel> {
     pricePerPerson,
     pricePerPersonNight,
     mapUrl,
+    hotelImage,
+    addressEn,
+    addressLocal,
+    phone,
+    website,
   );
   @override
   bool operator ==(Object other) =>
@@ -2311,10 +2399,6 @@ class Hotel extends DataClass implements Insertable<Hotel> {
           other.cityId == this.cityId &&
           other.lat == this.lat &&
           other.lng == this.lng &&
-          other.address == this.address &&
-          other.localAddress == this.localAddress &&
-          other.phone == this.phone &&
-          other.website == this.website &&
           other.id == this.id &&
           other.name == this.name &&
           other.localName == this.localName &&
@@ -2326,17 +2410,18 @@ class Hotel extends DataClass implements Insertable<Hotel> {
           other.totalPrice == this.totalPrice &&
           other.pricePerPerson == this.pricePerPerson &&
           other.pricePerPersonNight == this.pricePerPersonNight &&
-          other.mapUrl == this.mapUrl);
+          other.mapUrl == this.mapUrl &&
+          other.hotelImage == this.hotelImage &&
+          other.addressEn == this.addressEn &&
+          other.addressLocal == this.addressLocal &&
+          other.phone == this.phone &&
+          other.website == this.website);
 }
 
 class HotelsCompanion extends UpdateCompanion<Hotel> {
   final Value<int> cityId;
   final Value<double?> lat;
   final Value<double?> lng;
-  final Value<String?> address;
-  final Value<String?> localAddress;
-  final Value<String?> phone;
-  final Value<String?> website;
   final Value<int> id;
   final Value<String> name;
   final Value<String?> localName;
@@ -2349,14 +2434,15 @@ class HotelsCompanion extends UpdateCompanion<Hotel> {
   final Value<double?> pricePerPerson;
   final Value<double?> pricePerPersonNight;
   final Value<String?> mapUrl;
+  final Value<String?> hotelImage;
+  final Value<String?> addressEn;
+  final Value<String?> addressLocal;
+  final Value<String?> phone;
+  final Value<String?> website;
   const HotelsCompanion({
     this.cityId = const Value.absent(),
     this.lat = const Value.absent(),
     this.lng = const Value.absent(),
-    this.address = const Value.absent(),
-    this.localAddress = const Value.absent(),
-    this.phone = const Value.absent(),
-    this.website = const Value.absent(),
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.localName = const Value.absent(),
@@ -2369,15 +2455,16 @@ class HotelsCompanion extends UpdateCompanion<Hotel> {
     this.pricePerPerson = const Value.absent(),
     this.pricePerPersonNight = const Value.absent(),
     this.mapUrl = const Value.absent(),
+    this.hotelImage = const Value.absent(),
+    this.addressEn = const Value.absent(),
+    this.addressLocal = const Value.absent(),
+    this.phone = const Value.absent(),
+    this.website = const Value.absent(),
   });
   HotelsCompanion.insert({
     required int cityId,
     this.lat = const Value.absent(),
     this.lng = const Value.absent(),
-    this.address = const Value.absent(),
-    this.localAddress = const Value.absent(),
-    this.phone = const Value.absent(),
-    this.website = const Value.absent(),
     this.id = const Value.absent(),
     required String name,
     this.localName = const Value.absent(),
@@ -2390,16 +2477,17 @@ class HotelsCompanion extends UpdateCompanion<Hotel> {
     this.pricePerPerson = const Value.absent(),
     this.pricePerPersonNight = const Value.absent(),
     this.mapUrl = const Value.absent(),
+    this.hotelImage = const Value.absent(),
+    this.addressEn = const Value.absent(),
+    this.addressLocal = const Value.absent(),
+    this.phone = const Value.absent(),
+    this.website = const Value.absent(),
   }) : cityId = Value(cityId),
        name = Value(name);
   static Insertable<Hotel> custom({
     Expression<int>? cityId,
     Expression<double>? lat,
     Expression<double>? lng,
-    Expression<String>? address,
-    Expression<String>? localAddress,
-    Expression<String>? phone,
-    Expression<String>? website,
     Expression<int>? id,
     Expression<String>? name,
     Expression<String>? localName,
@@ -2412,15 +2500,16 @@ class HotelsCompanion extends UpdateCompanion<Hotel> {
     Expression<double>? pricePerPerson,
     Expression<double>? pricePerPersonNight,
     Expression<String>? mapUrl,
+    Expression<String>? hotelImage,
+    Expression<String>? addressEn,
+    Expression<String>? addressLocal,
+    Expression<String>? phone,
+    Expression<String>? website,
   }) {
     return RawValuesInsertable({
       if (cityId != null) 'city_id': cityId,
       if (lat != null) 'lat': lat,
       if (lng != null) 'lng': lng,
-      if (address != null) 'address': address,
-      if (localAddress != null) 'local_address': localAddress,
-      if (phone != null) 'phone': phone,
-      if (website != null) 'website': website,
       if (id != null) 'id': id,
       if (name != null) 'name': name,
       if (localName != null) 'local_name': localName,
@@ -2434,6 +2523,11 @@ class HotelsCompanion extends UpdateCompanion<Hotel> {
       if (pricePerPersonNight != null)
         'price_per_person_night': pricePerPersonNight,
       if (mapUrl != null) 'map_url': mapUrl,
+      if (hotelImage != null) 'hotel_image': hotelImage,
+      if (addressEn != null) 'address_en': addressEn,
+      if (addressLocal != null) 'address_local': addressLocal,
+      if (phone != null) 'phone': phone,
+      if (website != null) 'website': website,
     });
   }
 
@@ -2441,10 +2535,6 @@ class HotelsCompanion extends UpdateCompanion<Hotel> {
     Value<int>? cityId,
     Value<double?>? lat,
     Value<double?>? lng,
-    Value<String?>? address,
-    Value<String?>? localAddress,
-    Value<String?>? phone,
-    Value<String?>? website,
     Value<int>? id,
     Value<String>? name,
     Value<String?>? localName,
@@ -2457,15 +2547,16 @@ class HotelsCompanion extends UpdateCompanion<Hotel> {
     Value<double?>? pricePerPerson,
     Value<double?>? pricePerPersonNight,
     Value<String?>? mapUrl,
+    Value<String?>? hotelImage,
+    Value<String?>? addressEn,
+    Value<String?>? addressLocal,
+    Value<String?>? phone,
+    Value<String?>? website,
   }) {
     return HotelsCompanion(
       cityId: cityId ?? this.cityId,
       lat: lat ?? this.lat,
       lng: lng ?? this.lng,
-      address: address ?? this.address,
-      localAddress: localAddress ?? this.localAddress,
-      phone: phone ?? this.phone,
-      website: website ?? this.website,
       id: id ?? this.id,
       name: name ?? this.name,
       localName: localName ?? this.localName,
@@ -2478,6 +2569,11 @@ class HotelsCompanion extends UpdateCompanion<Hotel> {
       pricePerPerson: pricePerPerson ?? this.pricePerPerson,
       pricePerPersonNight: pricePerPersonNight ?? this.pricePerPersonNight,
       mapUrl: mapUrl ?? this.mapUrl,
+      hotelImage: hotelImage ?? this.hotelImage,
+      addressEn: addressEn ?? this.addressEn,
+      addressLocal: addressLocal ?? this.addressLocal,
+      phone: phone ?? this.phone,
+      website: website ?? this.website,
     );
   }
 
@@ -2492,18 +2588,6 @@ class HotelsCompanion extends UpdateCompanion<Hotel> {
     }
     if (lng.present) {
       map['lng'] = Variable<double>(lng.value);
-    }
-    if (address.present) {
-      map['address'] = Variable<String>(address.value);
-    }
-    if (localAddress.present) {
-      map['local_address'] = Variable<String>(localAddress.value);
-    }
-    if (phone.present) {
-      map['phone'] = Variable<String>(phone.value);
-    }
-    if (website.present) {
-      map['website'] = Variable<String>(website.value);
     }
     if (id.present) {
       map['id'] = Variable<int>(id.value);
@@ -2543,6 +2627,21 @@ class HotelsCompanion extends UpdateCompanion<Hotel> {
     if (mapUrl.present) {
       map['map_url'] = Variable<String>(mapUrl.value);
     }
+    if (hotelImage.present) {
+      map['hotel_image'] = Variable<String>(hotelImage.value);
+    }
+    if (addressEn.present) {
+      map['address_en'] = Variable<String>(addressEn.value);
+    }
+    if (addressLocal.present) {
+      map['address_local'] = Variable<String>(addressLocal.value);
+    }
+    if (phone.present) {
+      map['phone'] = Variable<String>(phone.value);
+    }
+    if (website.present) {
+      map['website'] = Variable<String>(website.value);
+    }
     return map;
   }
 
@@ -2552,10 +2651,6 @@ class HotelsCompanion extends UpdateCompanion<Hotel> {
           ..write('cityId: $cityId, ')
           ..write('lat: $lat, ')
           ..write('lng: $lng, ')
-          ..write('address: $address, ')
-          ..write('localAddress: $localAddress, ')
-          ..write('phone: $phone, ')
-          ..write('website: $website, ')
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('localName: $localName, ')
@@ -2567,939 +2662,12 @@ class HotelsCompanion extends UpdateCompanion<Hotel> {
           ..write('totalPrice: $totalPrice, ')
           ..write('pricePerPerson: $pricePerPerson, ')
           ..write('pricePerPersonNight: $pricePerPersonNight, ')
-          ..write('mapUrl: $mapUrl')
-          ..write(')'))
-        .toString();
-  }
-}
-
-class $ActivitiesTable extends Activities
-    with TableInfo<$ActivitiesTable, Activity> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $ActivitiesTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _cityIdMeta = const VerificationMeta('cityId');
-  @override
-  late final GeneratedColumn<int> cityId = GeneratedColumn<int>(
-    'city_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES cities (id)',
-    ),
-  );
-  static const VerificationMeta _latMeta = const VerificationMeta('lat');
-  @override
-  late final GeneratedColumn<double> lat = GeneratedColumn<double>(
-    'lat',
-    aliasedName,
-    true,
-    type: DriftSqlType.double,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _lngMeta = const VerificationMeta('lng');
-  @override
-  late final GeneratedColumn<double> lng = GeneratedColumn<double>(
-    'lng',
-    aliasedName,
-    true,
-    type: DriftSqlType.double,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
-  @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
-    'id',
-    aliasedName,
-    false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
-  );
-  static const VerificationMeta _dateMeta = const VerificationMeta('date');
-  @override
-  late final GeneratedColumn<DateTime> date = GeneratedColumn<DateTime>(
-    'date',
-    aliasedName,
-    false,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _timeMeta = const VerificationMeta('time');
-  @override
-  late final GeneratedColumn<String> time = GeneratedColumn<String>(
-    'time',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _titleMeta = const VerificationMeta('title');
-  @override
-  late final GeneratedColumn<String> title = GeneratedColumn<String>(
-    'title',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _activityTypeMeta = const VerificationMeta(
-    'activityType',
-  );
-  @override
-  late final GeneratedColumn<String> activityType = GeneratedColumn<String>(
-    'activity_type',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _locationMeta = const VerificationMeta(
-    'location',
-  );
-  @override
-  late final GeneratedColumn<String> location = GeneratedColumn<String>(
-    'location',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
-  @override
-  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
-    'notes',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _urlMeta = const VerificationMeta('url');
-  @override
-  late final GeneratedColumn<String> url = GeneratedColumn<String>(
-    'url',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _priceMeta = const VerificationMeta('price');
-  @override
-  late final GeneratedColumn<double> price = GeneratedColumn<double>(
-    'price',
-    aliasedName,
-    true,
-    type: DriftSqlType.double,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _currencyMeta = const VerificationMeta(
-    'currency',
-  );
-  @override
-  late final GeneratedColumn<String> currency = GeneratedColumn<String>(
-    'currency',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _durationMeta = const VerificationMeta(
-    'duration',
-  );
-  @override
-  late final GeneratedColumn<int> duration = GeneratedColumn<int>(
-    'duration',
-    aliasedName,
-    true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _availabilityMeta = const VerificationMeta(
-    'availability',
-  );
-  @override
-  late final GeneratedColumn<String> availability = GeneratedColumn<String>(
-    'availability',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _statusMeta = const VerificationMeta('status');
-  @override
-  late final GeneratedColumn<String> status = GeneratedColumn<String>(
-    'status',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _bookedAtMeta = const VerificationMeta(
-    'bookedAt',
-  );
-  @override
-  late final GeneratedColumn<DateTime> bookedAt = GeneratedColumn<DateTime>(
-    'booked_at',
-    aliasedName,
-    true,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
-  );
-  @override
-  List<GeneratedColumn> get $columns => [
-    cityId,
-    lat,
-    lng,
-    id,
-    date,
-    time,
-    title,
-    activityType,
-    location,
-    notes,
-    url,
-    price,
-    currency,
-    duration,
-    availability,
-    status,
-    bookedAt,
-  ];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'activities';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<Activity> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('city_id')) {
-      context.handle(
-        _cityIdMeta,
-        cityId.isAcceptableOrUnknown(data['city_id']!, _cityIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_cityIdMeta);
-    }
-    if (data.containsKey('lat')) {
-      context.handle(
-        _latMeta,
-        lat.isAcceptableOrUnknown(data['lat']!, _latMeta),
-      );
-    }
-    if (data.containsKey('lng')) {
-      context.handle(
-        _lngMeta,
-        lng.isAcceptableOrUnknown(data['lng']!, _lngMeta),
-      );
-    }
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    }
-    if (data.containsKey('date')) {
-      context.handle(
-        _dateMeta,
-        date.isAcceptableOrUnknown(data['date']!, _dateMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_dateMeta);
-    }
-    if (data.containsKey('time')) {
-      context.handle(
-        _timeMeta,
-        time.isAcceptableOrUnknown(data['time']!, _timeMeta),
-      );
-    }
-    if (data.containsKey('title')) {
-      context.handle(
-        _titleMeta,
-        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_titleMeta);
-    }
-    if (data.containsKey('activity_type')) {
-      context.handle(
-        _activityTypeMeta,
-        activityType.isAcceptableOrUnknown(
-          data['activity_type']!,
-          _activityTypeMeta,
-        ),
-      );
-    }
-    if (data.containsKey('location')) {
-      context.handle(
-        _locationMeta,
-        location.isAcceptableOrUnknown(data['location']!, _locationMeta),
-      );
-    }
-    if (data.containsKey('notes')) {
-      context.handle(
-        _notesMeta,
-        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
-      );
-    }
-    if (data.containsKey('url')) {
-      context.handle(
-        _urlMeta,
-        url.isAcceptableOrUnknown(data['url']!, _urlMeta),
-      );
-    }
-    if (data.containsKey('price')) {
-      context.handle(
-        _priceMeta,
-        price.isAcceptableOrUnknown(data['price']!, _priceMeta),
-      );
-    }
-    if (data.containsKey('currency')) {
-      context.handle(
-        _currencyMeta,
-        currency.isAcceptableOrUnknown(data['currency']!, _currencyMeta),
-      );
-    }
-    if (data.containsKey('duration')) {
-      context.handle(
-        _durationMeta,
-        duration.isAcceptableOrUnknown(data['duration']!, _durationMeta),
-      );
-    }
-    if (data.containsKey('availability')) {
-      context.handle(
-        _availabilityMeta,
-        availability.isAcceptableOrUnknown(
-          data['availability']!,
-          _availabilityMeta,
-        ),
-      );
-    }
-    if (data.containsKey('status')) {
-      context.handle(
-        _statusMeta,
-        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
-      );
-    }
-    if (data.containsKey('booked_at')) {
-      context.handle(
-        _bookedAtMeta,
-        bookedAt.isAcceptableOrUnknown(data['booked_at']!, _bookedAtMeta),
-      );
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {id};
-  @override
-  Activity map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return Activity(
-      cityId: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}city_id'],
-      )!,
-      lat: attachedDatabase.typeMapping.read(
-        DriftSqlType.double,
-        data['${effectivePrefix}lat'],
-      ),
-      lng: attachedDatabase.typeMapping.read(
-        DriftSqlType.double,
-        data['${effectivePrefix}lng'],
-      ),
-      id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}id'],
-      )!,
-      date: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}date'],
-      )!,
-      time: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}time'],
-      ),
-      title: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}title'],
-      )!,
-      activityType: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}activity_type'],
-      ),
-      location: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}location'],
-      ),
-      notes: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}notes'],
-      ),
-      url: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}url'],
-      ),
-      price: attachedDatabase.typeMapping.read(
-        DriftSqlType.double,
-        data['${effectivePrefix}price'],
-      ),
-      currency: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}currency'],
-      ),
-      duration: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}duration'],
-      ),
-      availability: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}availability'],
-      ),
-      status: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}status'],
-      ),
-      bookedAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}booked_at'],
-      ),
-    );
-  }
-
-  @override
-  $ActivitiesTable createAlias(String alias) {
-    return $ActivitiesTable(attachedDatabase, alias);
-  }
-}
-
-class Activity extends DataClass implements Insertable<Activity> {
-  final int cityId;
-  final double? lat;
-  final double? lng;
-  final int id;
-  final DateTime date;
-  final String? time;
-  final String title;
-  final String? activityType;
-  final String? location;
-  final String? notes;
-  final String? url;
-  final double? price;
-  final String? currency;
-  final int? duration;
-  final String? availability;
-  final String? status;
-  final DateTime? bookedAt;
-  const Activity({
-    required this.cityId,
-    this.lat,
-    this.lng,
-    required this.id,
-    required this.date,
-    this.time,
-    required this.title,
-    this.activityType,
-    this.location,
-    this.notes,
-    this.url,
-    this.price,
-    this.currency,
-    this.duration,
-    this.availability,
-    this.status,
-    this.bookedAt,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['city_id'] = Variable<int>(cityId);
-    if (!nullToAbsent || lat != null) {
-      map['lat'] = Variable<double>(lat);
-    }
-    if (!nullToAbsent || lng != null) {
-      map['lng'] = Variable<double>(lng);
-    }
-    map['id'] = Variable<int>(id);
-    map['date'] = Variable<DateTime>(date);
-    if (!nullToAbsent || time != null) {
-      map['time'] = Variable<String>(time);
-    }
-    map['title'] = Variable<String>(title);
-    if (!nullToAbsent || activityType != null) {
-      map['activity_type'] = Variable<String>(activityType);
-    }
-    if (!nullToAbsent || location != null) {
-      map['location'] = Variable<String>(location);
-    }
-    if (!nullToAbsent || notes != null) {
-      map['notes'] = Variable<String>(notes);
-    }
-    if (!nullToAbsent || url != null) {
-      map['url'] = Variable<String>(url);
-    }
-    if (!nullToAbsent || price != null) {
-      map['price'] = Variable<double>(price);
-    }
-    if (!nullToAbsent || currency != null) {
-      map['currency'] = Variable<String>(currency);
-    }
-    if (!nullToAbsent || duration != null) {
-      map['duration'] = Variable<int>(duration);
-    }
-    if (!nullToAbsent || availability != null) {
-      map['availability'] = Variable<String>(availability);
-    }
-    if (!nullToAbsent || status != null) {
-      map['status'] = Variable<String>(status);
-    }
-    if (!nullToAbsent || bookedAt != null) {
-      map['booked_at'] = Variable<DateTime>(bookedAt);
-    }
-    return map;
-  }
-
-  ActivitiesCompanion toCompanion(bool nullToAbsent) {
-    return ActivitiesCompanion(
-      cityId: Value(cityId),
-      lat: lat == null && nullToAbsent ? const Value.absent() : Value(lat),
-      lng: lng == null && nullToAbsent ? const Value.absent() : Value(lng),
-      id: Value(id),
-      date: Value(date),
-      time: time == null && nullToAbsent ? const Value.absent() : Value(time),
-      title: Value(title),
-      activityType: activityType == null && nullToAbsent
-          ? const Value.absent()
-          : Value(activityType),
-      location: location == null && nullToAbsent
-          ? const Value.absent()
-          : Value(location),
-      notes: notes == null && nullToAbsent
-          ? const Value.absent()
-          : Value(notes),
-      url: url == null && nullToAbsent ? const Value.absent() : Value(url),
-      price: price == null && nullToAbsent
-          ? const Value.absent()
-          : Value(price),
-      currency: currency == null && nullToAbsent
-          ? const Value.absent()
-          : Value(currency),
-      duration: duration == null && nullToAbsent
-          ? const Value.absent()
-          : Value(duration),
-      availability: availability == null && nullToAbsent
-          ? const Value.absent()
-          : Value(availability),
-      status: status == null && nullToAbsent
-          ? const Value.absent()
-          : Value(status),
-      bookedAt: bookedAt == null && nullToAbsent
-          ? const Value.absent()
-          : Value(bookedAt),
-    );
-  }
-
-  factory Activity.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return Activity(
-      cityId: serializer.fromJson<int>(json['cityId']),
-      lat: serializer.fromJson<double?>(json['lat']),
-      lng: serializer.fromJson<double?>(json['lng']),
-      id: serializer.fromJson<int>(json['id']),
-      date: serializer.fromJson<DateTime>(json['date']),
-      time: serializer.fromJson<String?>(json['time']),
-      title: serializer.fromJson<String>(json['title']),
-      activityType: serializer.fromJson<String?>(json['activityType']),
-      location: serializer.fromJson<String?>(json['location']),
-      notes: serializer.fromJson<String?>(json['notes']),
-      url: serializer.fromJson<String?>(json['url']),
-      price: serializer.fromJson<double?>(json['price']),
-      currency: serializer.fromJson<String?>(json['currency']),
-      duration: serializer.fromJson<int?>(json['duration']),
-      availability: serializer.fromJson<String?>(json['availability']),
-      status: serializer.fromJson<String?>(json['status']),
-      bookedAt: serializer.fromJson<DateTime?>(json['bookedAt']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'cityId': serializer.toJson<int>(cityId),
-      'lat': serializer.toJson<double?>(lat),
-      'lng': serializer.toJson<double?>(lng),
-      'id': serializer.toJson<int>(id),
-      'date': serializer.toJson<DateTime>(date),
-      'time': serializer.toJson<String?>(time),
-      'title': serializer.toJson<String>(title),
-      'activityType': serializer.toJson<String?>(activityType),
-      'location': serializer.toJson<String?>(location),
-      'notes': serializer.toJson<String?>(notes),
-      'url': serializer.toJson<String?>(url),
-      'price': serializer.toJson<double?>(price),
-      'currency': serializer.toJson<String?>(currency),
-      'duration': serializer.toJson<int?>(duration),
-      'availability': serializer.toJson<String?>(availability),
-      'status': serializer.toJson<String?>(status),
-      'bookedAt': serializer.toJson<DateTime?>(bookedAt),
-    };
-  }
-
-  Activity copyWith({
-    int? cityId,
-    Value<double?> lat = const Value.absent(),
-    Value<double?> lng = const Value.absent(),
-    int? id,
-    DateTime? date,
-    Value<String?> time = const Value.absent(),
-    String? title,
-    Value<String?> activityType = const Value.absent(),
-    Value<String?> location = const Value.absent(),
-    Value<String?> notes = const Value.absent(),
-    Value<String?> url = const Value.absent(),
-    Value<double?> price = const Value.absent(),
-    Value<String?> currency = const Value.absent(),
-    Value<int?> duration = const Value.absent(),
-    Value<String?> availability = const Value.absent(),
-    Value<String?> status = const Value.absent(),
-    Value<DateTime?> bookedAt = const Value.absent(),
-  }) => Activity(
-    cityId: cityId ?? this.cityId,
-    lat: lat.present ? lat.value : this.lat,
-    lng: lng.present ? lng.value : this.lng,
-    id: id ?? this.id,
-    date: date ?? this.date,
-    time: time.present ? time.value : this.time,
-    title: title ?? this.title,
-    activityType: activityType.present ? activityType.value : this.activityType,
-    location: location.present ? location.value : this.location,
-    notes: notes.present ? notes.value : this.notes,
-    url: url.present ? url.value : this.url,
-    price: price.present ? price.value : this.price,
-    currency: currency.present ? currency.value : this.currency,
-    duration: duration.present ? duration.value : this.duration,
-    availability: availability.present ? availability.value : this.availability,
-    status: status.present ? status.value : this.status,
-    bookedAt: bookedAt.present ? bookedAt.value : this.bookedAt,
-  );
-  Activity copyWithCompanion(ActivitiesCompanion data) {
-    return Activity(
-      cityId: data.cityId.present ? data.cityId.value : this.cityId,
-      lat: data.lat.present ? data.lat.value : this.lat,
-      lng: data.lng.present ? data.lng.value : this.lng,
-      id: data.id.present ? data.id.value : this.id,
-      date: data.date.present ? data.date.value : this.date,
-      time: data.time.present ? data.time.value : this.time,
-      title: data.title.present ? data.title.value : this.title,
-      activityType: data.activityType.present
-          ? data.activityType.value
-          : this.activityType,
-      location: data.location.present ? data.location.value : this.location,
-      notes: data.notes.present ? data.notes.value : this.notes,
-      url: data.url.present ? data.url.value : this.url,
-      price: data.price.present ? data.price.value : this.price,
-      currency: data.currency.present ? data.currency.value : this.currency,
-      duration: data.duration.present ? data.duration.value : this.duration,
-      availability: data.availability.present
-          ? data.availability.value
-          : this.availability,
-      status: data.status.present ? data.status.value : this.status,
-      bookedAt: data.bookedAt.present ? data.bookedAt.value : this.bookedAt,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('Activity(')
-          ..write('cityId: $cityId, ')
-          ..write('lat: $lat, ')
-          ..write('lng: $lng, ')
-          ..write('id: $id, ')
-          ..write('date: $date, ')
-          ..write('time: $time, ')
-          ..write('title: $title, ')
-          ..write('activityType: $activityType, ')
-          ..write('location: $location, ')
-          ..write('notes: $notes, ')
-          ..write('url: $url, ')
-          ..write('price: $price, ')
-          ..write('currency: $currency, ')
-          ..write('duration: $duration, ')
-          ..write('availability: $availability, ')
-          ..write('status: $status, ')
-          ..write('bookedAt: $bookedAt')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(
-    cityId,
-    lat,
-    lng,
-    id,
-    date,
-    time,
-    title,
-    activityType,
-    location,
-    notes,
-    url,
-    price,
-    currency,
-    duration,
-    availability,
-    status,
-    bookedAt,
-  );
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is Activity &&
-          other.cityId == this.cityId &&
-          other.lat == this.lat &&
-          other.lng == this.lng &&
-          other.id == this.id &&
-          other.date == this.date &&
-          other.time == this.time &&
-          other.title == this.title &&
-          other.activityType == this.activityType &&
-          other.location == this.location &&
-          other.notes == this.notes &&
-          other.url == this.url &&
-          other.price == this.price &&
-          other.currency == this.currency &&
-          other.duration == this.duration &&
-          other.availability == this.availability &&
-          other.status == this.status &&
-          other.bookedAt == this.bookedAt);
-}
-
-class ActivitiesCompanion extends UpdateCompanion<Activity> {
-  final Value<int> cityId;
-  final Value<double?> lat;
-  final Value<double?> lng;
-  final Value<int> id;
-  final Value<DateTime> date;
-  final Value<String?> time;
-  final Value<String> title;
-  final Value<String?> activityType;
-  final Value<String?> location;
-  final Value<String?> notes;
-  final Value<String?> url;
-  final Value<double?> price;
-  final Value<String?> currency;
-  final Value<int?> duration;
-  final Value<String?> availability;
-  final Value<String?> status;
-  final Value<DateTime?> bookedAt;
-  const ActivitiesCompanion({
-    this.cityId = const Value.absent(),
-    this.lat = const Value.absent(),
-    this.lng = const Value.absent(),
-    this.id = const Value.absent(),
-    this.date = const Value.absent(),
-    this.time = const Value.absent(),
-    this.title = const Value.absent(),
-    this.activityType = const Value.absent(),
-    this.location = const Value.absent(),
-    this.notes = const Value.absent(),
-    this.url = const Value.absent(),
-    this.price = const Value.absent(),
-    this.currency = const Value.absent(),
-    this.duration = const Value.absent(),
-    this.availability = const Value.absent(),
-    this.status = const Value.absent(),
-    this.bookedAt = const Value.absent(),
-  });
-  ActivitiesCompanion.insert({
-    required int cityId,
-    this.lat = const Value.absent(),
-    this.lng = const Value.absent(),
-    this.id = const Value.absent(),
-    required DateTime date,
-    this.time = const Value.absent(),
-    required String title,
-    this.activityType = const Value.absent(),
-    this.location = const Value.absent(),
-    this.notes = const Value.absent(),
-    this.url = const Value.absent(),
-    this.price = const Value.absent(),
-    this.currency = const Value.absent(),
-    this.duration = const Value.absent(),
-    this.availability = const Value.absent(),
-    this.status = const Value.absent(),
-    this.bookedAt = const Value.absent(),
-  }) : cityId = Value(cityId),
-       date = Value(date),
-       title = Value(title);
-  static Insertable<Activity> custom({
-    Expression<int>? cityId,
-    Expression<double>? lat,
-    Expression<double>? lng,
-    Expression<int>? id,
-    Expression<DateTime>? date,
-    Expression<String>? time,
-    Expression<String>? title,
-    Expression<String>? activityType,
-    Expression<String>? location,
-    Expression<String>? notes,
-    Expression<String>? url,
-    Expression<double>? price,
-    Expression<String>? currency,
-    Expression<int>? duration,
-    Expression<String>? availability,
-    Expression<String>? status,
-    Expression<DateTime>? bookedAt,
-  }) {
-    return RawValuesInsertable({
-      if (cityId != null) 'city_id': cityId,
-      if (lat != null) 'lat': lat,
-      if (lng != null) 'lng': lng,
-      if (id != null) 'id': id,
-      if (date != null) 'date': date,
-      if (time != null) 'time': time,
-      if (title != null) 'title': title,
-      if (activityType != null) 'activity_type': activityType,
-      if (location != null) 'location': location,
-      if (notes != null) 'notes': notes,
-      if (url != null) 'url': url,
-      if (price != null) 'price': price,
-      if (currency != null) 'currency': currency,
-      if (duration != null) 'duration': duration,
-      if (availability != null) 'availability': availability,
-      if (status != null) 'status': status,
-      if (bookedAt != null) 'booked_at': bookedAt,
-    });
-  }
-
-  ActivitiesCompanion copyWith({
-    Value<int>? cityId,
-    Value<double?>? lat,
-    Value<double?>? lng,
-    Value<int>? id,
-    Value<DateTime>? date,
-    Value<String?>? time,
-    Value<String>? title,
-    Value<String?>? activityType,
-    Value<String?>? location,
-    Value<String?>? notes,
-    Value<String?>? url,
-    Value<double?>? price,
-    Value<String?>? currency,
-    Value<int?>? duration,
-    Value<String?>? availability,
-    Value<String?>? status,
-    Value<DateTime?>? bookedAt,
-  }) {
-    return ActivitiesCompanion(
-      cityId: cityId ?? this.cityId,
-      lat: lat ?? this.lat,
-      lng: lng ?? this.lng,
-      id: id ?? this.id,
-      date: date ?? this.date,
-      time: time ?? this.time,
-      title: title ?? this.title,
-      activityType: activityType ?? this.activityType,
-      location: location ?? this.location,
-      notes: notes ?? this.notes,
-      url: url ?? this.url,
-      price: price ?? this.price,
-      currency: currency ?? this.currency,
-      duration: duration ?? this.duration,
-      availability: availability ?? this.availability,
-      status: status ?? this.status,
-      bookedAt: bookedAt ?? this.bookedAt,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (cityId.present) {
-      map['city_id'] = Variable<int>(cityId.value);
-    }
-    if (lat.present) {
-      map['lat'] = Variable<double>(lat.value);
-    }
-    if (lng.present) {
-      map['lng'] = Variable<double>(lng.value);
-    }
-    if (id.present) {
-      map['id'] = Variable<int>(id.value);
-    }
-    if (date.present) {
-      map['date'] = Variable<DateTime>(date.value);
-    }
-    if (time.present) {
-      map['time'] = Variable<String>(time.value);
-    }
-    if (title.present) {
-      map['title'] = Variable<String>(title.value);
-    }
-    if (activityType.present) {
-      map['activity_type'] = Variable<String>(activityType.value);
-    }
-    if (location.present) {
-      map['location'] = Variable<String>(location.value);
-    }
-    if (notes.present) {
-      map['notes'] = Variable<String>(notes.value);
-    }
-    if (url.present) {
-      map['url'] = Variable<String>(url.value);
-    }
-    if (price.present) {
-      map['price'] = Variable<double>(price.value);
-    }
-    if (currency.present) {
-      map['currency'] = Variable<String>(currency.value);
-    }
-    if (duration.present) {
-      map['duration'] = Variable<int>(duration.value);
-    }
-    if (availability.present) {
-      map['availability'] = Variable<String>(availability.value);
-    }
-    if (status.present) {
-      map['status'] = Variable<String>(status.value);
-    }
-    if (bookedAt.present) {
-      map['booked_at'] = Variable<DateTime>(bookedAt.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('ActivitiesCompanion(')
-          ..write('cityId: $cityId, ')
-          ..write('lat: $lat, ')
-          ..write('lng: $lng, ')
-          ..write('id: $id, ')
-          ..write('date: $date, ')
-          ..write('time: $time, ')
-          ..write('title: $title, ')
-          ..write('activityType: $activityType, ')
-          ..write('location: $location, ')
-          ..write('notes: $notes, ')
-          ..write('url: $url, ')
-          ..write('price: $price, ')
-          ..write('currency: $currency, ')
-          ..write('duration: $duration, ')
-          ..write('availability: $availability, ')
-          ..write('status: $status, ')
-          ..write('bookedAt: $bookedAt')
+          ..write('mapUrl: $mapUrl, ')
+          ..write('hotelImage: $hotelImage, ')
+          ..write('addressEn: $addressEn, ')
+          ..write('addressLocal: $addressLocal, ')
+          ..write('phone: $phone, ')
+          ..write('website: $website')
           ..write(')'))
         .toString();
   }
@@ -5260,6 +4428,1132 @@ class TrainsCompanion extends UpdateCompanion<Train> {
   }
 }
 
+class $ItineraryTable extends Itinerary
+    with TableInfo<$ItineraryTable, ItineraryData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ItineraryTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _cityIdMeta = const VerificationMeta('cityId');
+  @override
+  late final GeneratedColumn<int> cityId = GeneratedColumn<int>(
+    'city_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES cities (id)',
+    ),
+  );
+  static const VerificationMeta _latMeta = const VerificationMeta('lat');
+  @override
+  late final GeneratedColumn<double> lat = GeneratedColumn<double>(
+    'lat',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lngMeta = const VerificationMeta('lng');
+  @override
+  late final GeneratedColumn<double> lng = GeneratedColumn<double>(
+    'lng',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _dateMeta = const VerificationMeta('date');
+  @override
+  late final GeneratedColumn<DateTime> date = GeneratedColumn<DateTime>(
+    'date',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _timeMeta = const VerificationMeta('time');
+  @override
+  late final GeneratedColumn<String> time = GeneratedColumn<String>(
+    'time',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _typeMeta = const VerificationMeta('type');
+  @override
+  late final GeneratedColumn<String> type = GeneratedColumn<String>(
+    'type',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _locationMeta = const VerificationMeta(
+    'location',
+  );
+  @override
+  late final GeneratedColumn<String> location = GeneratedColumn<String>(
+    'location',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _urlMeta = const VerificationMeta('url');
+  @override
+  late final GeneratedColumn<String> url = GeneratedColumn<String>(
+    'url',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _priceMeta = const VerificationMeta('price');
+  @override
+  late final GeneratedColumn<double> price = GeneratedColumn<double>(
+    'price',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _currencyMeta = const VerificationMeta(
+    'currency',
+  );
+  @override
+  late final GeneratedColumn<String> currency = GeneratedColumn<String>(
+    'currency',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _durationMeta = const VerificationMeta(
+    'duration',
+  );
+  @override
+  late final GeneratedColumn<int> duration = GeneratedColumn<int>(
+    'duration',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _availabilityMeta = const VerificationMeta(
+    'availability',
+  );
+  @override
+  late final GeneratedColumn<String> availability = GeneratedColumn<String>(
+    'availability',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _bookedAtMeta = const VerificationMeta(
+    'bookedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> bookedAt = GeneratedColumn<DateTime>(
+    'booked_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _flightIdMeta = const VerificationMeta(
+    'flightId',
+  );
+  @override
+  late final GeneratedColumn<int> flightId = GeneratedColumn<int>(
+    'flight_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES flights (id)',
+    ),
+  );
+  static const VerificationMeta _trainIdMeta = const VerificationMeta(
+    'trainId',
+  );
+  @override
+  late final GeneratedColumn<int> trainId = GeneratedColumn<int>(
+    'train_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES trains (id)',
+    ),
+  );
+  static const VerificationMeta _hotelIdMeta = const VerificationMeta(
+    'hotelId',
+  );
+  @override
+  late final GeneratedColumn<int> hotelId = GeneratedColumn<int>(
+    'hotel_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES hotels (id)',
+    ),
+  );
+  static const VerificationMeta _imageMeta = const VerificationMeta('image');
+  @override
+  late final GeneratedColumn<String> image = GeneratedColumn<String>(
+    'image',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    cityId,
+    lat,
+    lng,
+    id,
+    date,
+    time,
+    title,
+    type,
+    location,
+    notes,
+    url,
+    price,
+    currency,
+    duration,
+    availability,
+    status,
+    bookedAt,
+    flightId,
+    trainId,
+    hotelId,
+    image,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'itinerary';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ItineraryData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('city_id')) {
+      context.handle(
+        _cityIdMeta,
+        cityId.isAcceptableOrUnknown(data['city_id']!, _cityIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_cityIdMeta);
+    }
+    if (data.containsKey('lat')) {
+      context.handle(
+        _latMeta,
+        lat.isAcceptableOrUnknown(data['lat']!, _latMeta),
+      );
+    }
+    if (data.containsKey('lng')) {
+      context.handle(
+        _lngMeta,
+        lng.isAcceptableOrUnknown(data['lng']!, _lngMeta),
+      );
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('date')) {
+      context.handle(
+        _dateMeta,
+        date.isAcceptableOrUnknown(data['date']!, _dateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dateMeta);
+    }
+    if (data.containsKey('time')) {
+      context.handle(
+        _timeMeta,
+        time.isAcceptableOrUnknown(data['time']!, _timeMeta),
+      );
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('type')) {
+      context.handle(
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+      );
+    }
+    if (data.containsKey('location')) {
+      context.handle(
+        _locationMeta,
+        location.isAcceptableOrUnknown(data['location']!, _locationMeta),
+      );
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
+    if (data.containsKey('url')) {
+      context.handle(
+        _urlMeta,
+        url.isAcceptableOrUnknown(data['url']!, _urlMeta),
+      );
+    }
+    if (data.containsKey('price')) {
+      context.handle(
+        _priceMeta,
+        price.isAcceptableOrUnknown(data['price']!, _priceMeta),
+      );
+    }
+    if (data.containsKey('currency')) {
+      context.handle(
+        _currencyMeta,
+        currency.isAcceptableOrUnknown(data['currency']!, _currencyMeta),
+      );
+    }
+    if (data.containsKey('duration')) {
+      context.handle(
+        _durationMeta,
+        duration.isAcceptableOrUnknown(data['duration']!, _durationMeta),
+      );
+    }
+    if (data.containsKey('availability')) {
+      context.handle(
+        _availabilityMeta,
+        availability.isAcceptableOrUnknown(
+          data['availability']!,
+          _availabilityMeta,
+        ),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('booked_at')) {
+      context.handle(
+        _bookedAtMeta,
+        bookedAt.isAcceptableOrUnknown(data['booked_at']!, _bookedAtMeta),
+      );
+    }
+    if (data.containsKey('flight_id')) {
+      context.handle(
+        _flightIdMeta,
+        flightId.isAcceptableOrUnknown(data['flight_id']!, _flightIdMeta),
+      );
+    }
+    if (data.containsKey('train_id')) {
+      context.handle(
+        _trainIdMeta,
+        trainId.isAcceptableOrUnknown(data['train_id']!, _trainIdMeta),
+      );
+    }
+    if (data.containsKey('hotel_id')) {
+      context.handle(
+        _hotelIdMeta,
+        hotelId.isAcceptableOrUnknown(data['hotel_id']!, _hotelIdMeta),
+      );
+    }
+    if (data.containsKey('image')) {
+      context.handle(
+        _imageMeta,
+        image.isAcceptableOrUnknown(data['image']!, _imageMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ItineraryData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ItineraryData(
+      cityId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}city_id'],
+      )!,
+      lat: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}lat'],
+      ),
+      lng: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}lng'],
+      ),
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      date: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}date'],
+      )!,
+      time: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}time'],
+      ),
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}type'],
+      ),
+      location: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}location'],
+      ),
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
+      url: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}url'],
+      ),
+      price: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}price'],
+      ),
+      currency: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}currency'],
+      ),
+      duration: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}duration'],
+      ),
+      availability: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}availability'],
+      ),
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      ),
+      bookedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}booked_at'],
+      ),
+      flightId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}flight_id'],
+      ),
+      trainId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}train_id'],
+      ),
+      hotelId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}hotel_id'],
+      ),
+      image: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}image'],
+      ),
+    );
+  }
+
+  @override
+  $ItineraryTable createAlias(String alias) {
+    return $ItineraryTable(attachedDatabase, alias);
+  }
+}
+
+class ItineraryData extends DataClass implements Insertable<ItineraryData> {
+  final int cityId;
+  final double? lat;
+  final double? lng;
+  final int id;
+  final DateTime date;
+  final String? time;
+  final String title;
+  final String? type;
+  final String? location;
+  final String? notes;
+  final String? url;
+  final double? price;
+  final String? currency;
+  final int? duration;
+  final String? availability;
+  final String? status;
+  final DateTime? bookedAt;
+  final int? flightId;
+  final int? trainId;
+  final int? hotelId;
+  final String? image;
+  const ItineraryData({
+    required this.cityId,
+    this.lat,
+    this.lng,
+    required this.id,
+    required this.date,
+    this.time,
+    required this.title,
+    this.type,
+    this.location,
+    this.notes,
+    this.url,
+    this.price,
+    this.currency,
+    this.duration,
+    this.availability,
+    this.status,
+    this.bookedAt,
+    this.flightId,
+    this.trainId,
+    this.hotelId,
+    this.image,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['city_id'] = Variable<int>(cityId);
+    if (!nullToAbsent || lat != null) {
+      map['lat'] = Variable<double>(lat);
+    }
+    if (!nullToAbsent || lng != null) {
+      map['lng'] = Variable<double>(lng);
+    }
+    map['id'] = Variable<int>(id);
+    map['date'] = Variable<DateTime>(date);
+    if (!nullToAbsent || time != null) {
+      map['time'] = Variable<String>(time);
+    }
+    map['title'] = Variable<String>(title);
+    if (!nullToAbsent || type != null) {
+      map['type'] = Variable<String>(type);
+    }
+    if (!nullToAbsent || location != null) {
+      map['location'] = Variable<String>(location);
+    }
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    if (!nullToAbsent || url != null) {
+      map['url'] = Variable<String>(url);
+    }
+    if (!nullToAbsent || price != null) {
+      map['price'] = Variable<double>(price);
+    }
+    if (!nullToAbsent || currency != null) {
+      map['currency'] = Variable<String>(currency);
+    }
+    if (!nullToAbsent || duration != null) {
+      map['duration'] = Variable<int>(duration);
+    }
+    if (!nullToAbsent || availability != null) {
+      map['availability'] = Variable<String>(availability);
+    }
+    if (!nullToAbsent || status != null) {
+      map['status'] = Variable<String>(status);
+    }
+    if (!nullToAbsent || bookedAt != null) {
+      map['booked_at'] = Variable<DateTime>(bookedAt);
+    }
+    if (!nullToAbsent || flightId != null) {
+      map['flight_id'] = Variable<int>(flightId);
+    }
+    if (!nullToAbsent || trainId != null) {
+      map['train_id'] = Variable<int>(trainId);
+    }
+    if (!nullToAbsent || hotelId != null) {
+      map['hotel_id'] = Variable<int>(hotelId);
+    }
+    if (!nullToAbsent || image != null) {
+      map['image'] = Variable<String>(image);
+    }
+    return map;
+  }
+
+  ItineraryCompanion toCompanion(bool nullToAbsent) {
+    return ItineraryCompanion(
+      cityId: Value(cityId),
+      lat: lat == null && nullToAbsent ? const Value.absent() : Value(lat),
+      lng: lng == null && nullToAbsent ? const Value.absent() : Value(lng),
+      id: Value(id),
+      date: Value(date),
+      time: time == null && nullToAbsent ? const Value.absent() : Value(time),
+      title: Value(title),
+      type: type == null && nullToAbsent ? const Value.absent() : Value(type),
+      location: location == null && nullToAbsent
+          ? const Value.absent()
+          : Value(location),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
+      url: url == null && nullToAbsent ? const Value.absent() : Value(url),
+      price: price == null && nullToAbsent
+          ? const Value.absent()
+          : Value(price),
+      currency: currency == null && nullToAbsent
+          ? const Value.absent()
+          : Value(currency),
+      duration: duration == null && nullToAbsent
+          ? const Value.absent()
+          : Value(duration),
+      availability: availability == null && nullToAbsent
+          ? const Value.absent()
+          : Value(availability),
+      status: status == null && nullToAbsent
+          ? const Value.absent()
+          : Value(status),
+      bookedAt: bookedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(bookedAt),
+      flightId: flightId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(flightId),
+      trainId: trainId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(trainId),
+      hotelId: hotelId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(hotelId),
+      image: image == null && nullToAbsent
+          ? const Value.absent()
+          : Value(image),
+    );
+  }
+
+  factory ItineraryData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ItineraryData(
+      cityId: serializer.fromJson<int>(json['cityId']),
+      lat: serializer.fromJson<double?>(json['lat']),
+      lng: serializer.fromJson<double?>(json['lng']),
+      id: serializer.fromJson<int>(json['id']),
+      date: serializer.fromJson<DateTime>(json['date']),
+      time: serializer.fromJson<String?>(json['time']),
+      title: serializer.fromJson<String>(json['title']),
+      type: serializer.fromJson<String?>(json['type']),
+      location: serializer.fromJson<String?>(json['location']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      url: serializer.fromJson<String?>(json['url']),
+      price: serializer.fromJson<double?>(json['price']),
+      currency: serializer.fromJson<String?>(json['currency']),
+      duration: serializer.fromJson<int?>(json['duration']),
+      availability: serializer.fromJson<String?>(json['availability']),
+      status: serializer.fromJson<String?>(json['status']),
+      bookedAt: serializer.fromJson<DateTime?>(json['bookedAt']),
+      flightId: serializer.fromJson<int?>(json['flightId']),
+      trainId: serializer.fromJson<int?>(json['trainId']),
+      hotelId: serializer.fromJson<int?>(json['hotelId']),
+      image: serializer.fromJson<String?>(json['image']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'cityId': serializer.toJson<int>(cityId),
+      'lat': serializer.toJson<double?>(lat),
+      'lng': serializer.toJson<double?>(lng),
+      'id': serializer.toJson<int>(id),
+      'date': serializer.toJson<DateTime>(date),
+      'time': serializer.toJson<String?>(time),
+      'title': serializer.toJson<String>(title),
+      'type': serializer.toJson<String?>(type),
+      'location': serializer.toJson<String?>(location),
+      'notes': serializer.toJson<String?>(notes),
+      'url': serializer.toJson<String?>(url),
+      'price': serializer.toJson<double?>(price),
+      'currency': serializer.toJson<String?>(currency),
+      'duration': serializer.toJson<int?>(duration),
+      'availability': serializer.toJson<String?>(availability),
+      'status': serializer.toJson<String?>(status),
+      'bookedAt': serializer.toJson<DateTime?>(bookedAt),
+      'flightId': serializer.toJson<int?>(flightId),
+      'trainId': serializer.toJson<int?>(trainId),
+      'hotelId': serializer.toJson<int?>(hotelId),
+      'image': serializer.toJson<String?>(image),
+    };
+  }
+
+  ItineraryData copyWith({
+    int? cityId,
+    Value<double?> lat = const Value.absent(),
+    Value<double?> lng = const Value.absent(),
+    int? id,
+    DateTime? date,
+    Value<String?> time = const Value.absent(),
+    String? title,
+    Value<String?> type = const Value.absent(),
+    Value<String?> location = const Value.absent(),
+    Value<String?> notes = const Value.absent(),
+    Value<String?> url = const Value.absent(),
+    Value<double?> price = const Value.absent(),
+    Value<String?> currency = const Value.absent(),
+    Value<int?> duration = const Value.absent(),
+    Value<String?> availability = const Value.absent(),
+    Value<String?> status = const Value.absent(),
+    Value<DateTime?> bookedAt = const Value.absent(),
+    Value<int?> flightId = const Value.absent(),
+    Value<int?> trainId = const Value.absent(),
+    Value<int?> hotelId = const Value.absent(),
+    Value<String?> image = const Value.absent(),
+  }) => ItineraryData(
+    cityId: cityId ?? this.cityId,
+    lat: lat.present ? lat.value : this.lat,
+    lng: lng.present ? lng.value : this.lng,
+    id: id ?? this.id,
+    date: date ?? this.date,
+    time: time.present ? time.value : this.time,
+    title: title ?? this.title,
+    type: type.present ? type.value : this.type,
+    location: location.present ? location.value : this.location,
+    notes: notes.present ? notes.value : this.notes,
+    url: url.present ? url.value : this.url,
+    price: price.present ? price.value : this.price,
+    currency: currency.present ? currency.value : this.currency,
+    duration: duration.present ? duration.value : this.duration,
+    availability: availability.present ? availability.value : this.availability,
+    status: status.present ? status.value : this.status,
+    bookedAt: bookedAt.present ? bookedAt.value : this.bookedAt,
+    flightId: flightId.present ? flightId.value : this.flightId,
+    trainId: trainId.present ? trainId.value : this.trainId,
+    hotelId: hotelId.present ? hotelId.value : this.hotelId,
+    image: image.present ? image.value : this.image,
+  );
+  ItineraryData copyWithCompanion(ItineraryCompanion data) {
+    return ItineraryData(
+      cityId: data.cityId.present ? data.cityId.value : this.cityId,
+      lat: data.lat.present ? data.lat.value : this.lat,
+      lng: data.lng.present ? data.lng.value : this.lng,
+      id: data.id.present ? data.id.value : this.id,
+      date: data.date.present ? data.date.value : this.date,
+      time: data.time.present ? data.time.value : this.time,
+      title: data.title.present ? data.title.value : this.title,
+      type: data.type.present ? data.type.value : this.type,
+      location: data.location.present ? data.location.value : this.location,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      url: data.url.present ? data.url.value : this.url,
+      price: data.price.present ? data.price.value : this.price,
+      currency: data.currency.present ? data.currency.value : this.currency,
+      duration: data.duration.present ? data.duration.value : this.duration,
+      availability: data.availability.present
+          ? data.availability.value
+          : this.availability,
+      status: data.status.present ? data.status.value : this.status,
+      bookedAt: data.bookedAt.present ? data.bookedAt.value : this.bookedAt,
+      flightId: data.flightId.present ? data.flightId.value : this.flightId,
+      trainId: data.trainId.present ? data.trainId.value : this.trainId,
+      hotelId: data.hotelId.present ? data.hotelId.value : this.hotelId,
+      image: data.image.present ? data.image.value : this.image,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ItineraryData(')
+          ..write('cityId: $cityId, ')
+          ..write('lat: $lat, ')
+          ..write('lng: $lng, ')
+          ..write('id: $id, ')
+          ..write('date: $date, ')
+          ..write('time: $time, ')
+          ..write('title: $title, ')
+          ..write('type: $type, ')
+          ..write('location: $location, ')
+          ..write('notes: $notes, ')
+          ..write('url: $url, ')
+          ..write('price: $price, ')
+          ..write('currency: $currency, ')
+          ..write('duration: $duration, ')
+          ..write('availability: $availability, ')
+          ..write('status: $status, ')
+          ..write('bookedAt: $bookedAt, ')
+          ..write('flightId: $flightId, ')
+          ..write('trainId: $trainId, ')
+          ..write('hotelId: $hotelId, ')
+          ..write('image: $image')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+    cityId,
+    lat,
+    lng,
+    id,
+    date,
+    time,
+    title,
+    type,
+    location,
+    notes,
+    url,
+    price,
+    currency,
+    duration,
+    availability,
+    status,
+    bookedAt,
+    flightId,
+    trainId,
+    hotelId,
+    image,
+  ]);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ItineraryData &&
+          other.cityId == this.cityId &&
+          other.lat == this.lat &&
+          other.lng == this.lng &&
+          other.id == this.id &&
+          other.date == this.date &&
+          other.time == this.time &&
+          other.title == this.title &&
+          other.type == this.type &&
+          other.location == this.location &&
+          other.notes == this.notes &&
+          other.url == this.url &&
+          other.price == this.price &&
+          other.currency == this.currency &&
+          other.duration == this.duration &&
+          other.availability == this.availability &&
+          other.status == this.status &&
+          other.bookedAt == this.bookedAt &&
+          other.flightId == this.flightId &&
+          other.trainId == this.trainId &&
+          other.hotelId == this.hotelId &&
+          other.image == this.image);
+}
+
+class ItineraryCompanion extends UpdateCompanion<ItineraryData> {
+  final Value<int> cityId;
+  final Value<double?> lat;
+  final Value<double?> lng;
+  final Value<int> id;
+  final Value<DateTime> date;
+  final Value<String?> time;
+  final Value<String> title;
+  final Value<String?> type;
+  final Value<String?> location;
+  final Value<String?> notes;
+  final Value<String?> url;
+  final Value<double?> price;
+  final Value<String?> currency;
+  final Value<int?> duration;
+  final Value<String?> availability;
+  final Value<String?> status;
+  final Value<DateTime?> bookedAt;
+  final Value<int?> flightId;
+  final Value<int?> trainId;
+  final Value<int?> hotelId;
+  final Value<String?> image;
+  const ItineraryCompanion({
+    this.cityId = const Value.absent(),
+    this.lat = const Value.absent(),
+    this.lng = const Value.absent(),
+    this.id = const Value.absent(),
+    this.date = const Value.absent(),
+    this.time = const Value.absent(),
+    this.title = const Value.absent(),
+    this.type = const Value.absent(),
+    this.location = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.url = const Value.absent(),
+    this.price = const Value.absent(),
+    this.currency = const Value.absent(),
+    this.duration = const Value.absent(),
+    this.availability = const Value.absent(),
+    this.status = const Value.absent(),
+    this.bookedAt = const Value.absent(),
+    this.flightId = const Value.absent(),
+    this.trainId = const Value.absent(),
+    this.hotelId = const Value.absent(),
+    this.image = const Value.absent(),
+  });
+  ItineraryCompanion.insert({
+    required int cityId,
+    this.lat = const Value.absent(),
+    this.lng = const Value.absent(),
+    this.id = const Value.absent(),
+    required DateTime date,
+    this.time = const Value.absent(),
+    required String title,
+    this.type = const Value.absent(),
+    this.location = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.url = const Value.absent(),
+    this.price = const Value.absent(),
+    this.currency = const Value.absent(),
+    this.duration = const Value.absent(),
+    this.availability = const Value.absent(),
+    this.status = const Value.absent(),
+    this.bookedAt = const Value.absent(),
+    this.flightId = const Value.absent(),
+    this.trainId = const Value.absent(),
+    this.hotelId = const Value.absent(),
+    this.image = const Value.absent(),
+  }) : cityId = Value(cityId),
+       date = Value(date),
+       title = Value(title);
+  static Insertable<ItineraryData> custom({
+    Expression<int>? cityId,
+    Expression<double>? lat,
+    Expression<double>? lng,
+    Expression<int>? id,
+    Expression<DateTime>? date,
+    Expression<String>? time,
+    Expression<String>? title,
+    Expression<String>? type,
+    Expression<String>? location,
+    Expression<String>? notes,
+    Expression<String>? url,
+    Expression<double>? price,
+    Expression<String>? currency,
+    Expression<int>? duration,
+    Expression<String>? availability,
+    Expression<String>? status,
+    Expression<DateTime>? bookedAt,
+    Expression<int>? flightId,
+    Expression<int>? trainId,
+    Expression<int>? hotelId,
+    Expression<String>? image,
+  }) {
+    return RawValuesInsertable({
+      if (cityId != null) 'city_id': cityId,
+      if (lat != null) 'lat': lat,
+      if (lng != null) 'lng': lng,
+      if (id != null) 'id': id,
+      if (date != null) 'date': date,
+      if (time != null) 'time': time,
+      if (title != null) 'title': title,
+      if (type != null) 'type': type,
+      if (location != null) 'location': location,
+      if (notes != null) 'notes': notes,
+      if (url != null) 'url': url,
+      if (price != null) 'price': price,
+      if (currency != null) 'currency': currency,
+      if (duration != null) 'duration': duration,
+      if (availability != null) 'availability': availability,
+      if (status != null) 'status': status,
+      if (bookedAt != null) 'booked_at': bookedAt,
+      if (flightId != null) 'flight_id': flightId,
+      if (trainId != null) 'train_id': trainId,
+      if (hotelId != null) 'hotel_id': hotelId,
+      if (image != null) 'image': image,
+    });
+  }
+
+  ItineraryCompanion copyWith({
+    Value<int>? cityId,
+    Value<double?>? lat,
+    Value<double?>? lng,
+    Value<int>? id,
+    Value<DateTime>? date,
+    Value<String?>? time,
+    Value<String>? title,
+    Value<String?>? type,
+    Value<String?>? location,
+    Value<String?>? notes,
+    Value<String?>? url,
+    Value<double?>? price,
+    Value<String?>? currency,
+    Value<int?>? duration,
+    Value<String?>? availability,
+    Value<String?>? status,
+    Value<DateTime?>? bookedAt,
+    Value<int?>? flightId,
+    Value<int?>? trainId,
+    Value<int?>? hotelId,
+    Value<String?>? image,
+  }) {
+    return ItineraryCompanion(
+      cityId: cityId ?? this.cityId,
+      lat: lat ?? this.lat,
+      lng: lng ?? this.lng,
+      id: id ?? this.id,
+      date: date ?? this.date,
+      time: time ?? this.time,
+      title: title ?? this.title,
+      type: type ?? this.type,
+      location: location ?? this.location,
+      notes: notes ?? this.notes,
+      url: url ?? this.url,
+      price: price ?? this.price,
+      currency: currency ?? this.currency,
+      duration: duration ?? this.duration,
+      availability: availability ?? this.availability,
+      status: status ?? this.status,
+      bookedAt: bookedAt ?? this.bookedAt,
+      flightId: flightId ?? this.flightId,
+      trainId: trainId ?? this.trainId,
+      hotelId: hotelId ?? this.hotelId,
+      image: image ?? this.image,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (cityId.present) {
+      map['city_id'] = Variable<int>(cityId.value);
+    }
+    if (lat.present) {
+      map['lat'] = Variable<double>(lat.value);
+    }
+    if (lng.present) {
+      map['lng'] = Variable<double>(lng.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (date.present) {
+      map['date'] = Variable<DateTime>(date.value);
+    }
+    if (time.present) {
+      map['time'] = Variable<String>(time.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (type.present) {
+      map['type'] = Variable<String>(type.value);
+    }
+    if (location.present) {
+      map['location'] = Variable<String>(location.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (url.present) {
+      map['url'] = Variable<String>(url.value);
+    }
+    if (price.present) {
+      map['price'] = Variable<double>(price.value);
+    }
+    if (currency.present) {
+      map['currency'] = Variable<String>(currency.value);
+    }
+    if (duration.present) {
+      map['duration'] = Variable<int>(duration.value);
+    }
+    if (availability.present) {
+      map['availability'] = Variable<String>(availability.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (bookedAt.present) {
+      map['booked_at'] = Variable<DateTime>(bookedAt.value);
+    }
+    if (flightId.present) {
+      map['flight_id'] = Variable<int>(flightId.value);
+    }
+    if (trainId.present) {
+      map['train_id'] = Variable<int>(trainId.value);
+    }
+    if (hotelId.present) {
+      map['hotel_id'] = Variable<int>(hotelId.value);
+    }
+    if (image.present) {
+      map['image'] = Variable<String>(image.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ItineraryCompanion(')
+          ..write('cityId: $cityId, ')
+          ..write('lat: $lat, ')
+          ..write('lng: $lng, ')
+          ..write('id: $id, ')
+          ..write('date: $date, ')
+          ..write('time: $time, ')
+          ..write('title: $title, ')
+          ..write('type: $type, ')
+          ..write('location: $location, ')
+          ..write('notes: $notes, ')
+          ..write('url: $url, ')
+          ..write('price: $price, ')
+          ..write('currency: $currency, ')
+          ..write('duration: $duration, ')
+          ..write('availability: $availability, ')
+          ..write('status: $status, ')
+          ..write('bookedAt: $bookedAt, ')
+          ..write('flightId: $flightId, ')
+          ..write('trainId: $trainId, ')
+          ..write('hotelId: $hotelId, ')
+          ..write('image: $image')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $PackingItemsTable extends PackingItems
     with TableInfo<$PackingItemsTable, PackingItem> {
   @override
@@ -6153,6 +6447,944 @@ class TripTipsCompanion extends UpdateCompanion<TripTip> {
   }
 }
 
+class $LocationsTable extends Locations
+    with TableInfo<$LocationsTable, Location> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocationsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _tripIdMeta = const VerificationMeta('tripId');
+  @override
+  late final GeneratedColumn<int> tripId = GeneratedColumn<int>(
+    'trip_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES trips (id)',
+    ),
+  );
+  static const VerificationMeta _cityIdMeta = const VerificationMeta('cityId');
+  @override
+  late final GeneratedColumn<int> cityId = GeneratedColumn<int>(
+    'city_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES cities (id)',
+    ),
+  );
+  static const VerificationMeta _latMeta = const VerificationMeta('lat');
+  @override
+  late final GeneratedColumn<double> lat = GeneratedColumn<double>(
+    'lat',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lngMeta = const VerificationMeta('lng');
+  @override
+  late final GeneratedColumn<double> lng = GeneratedColumn<double>(
+    'lng',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _typeMeta = const VerificationMeta('type');
+  @override
+  late final GeneratedColumn<String> type = GeneratedColumn<String>(
+    'type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _categoryMeta = const VerificationMeta(
+    'category',
+  );
+  @override
+  late final GeneratedColumn<String> category = GeneratedColumn<String>(
+    'category',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _addressEnMeta = const VerificationMeta(
+    'addressEn',
+  );
+  @override
+  late final GeneratedColumn<String> addressEn = GeneratedColumn<String>(
+    'address_en',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _addressLocalMeta = const VerificationMeta(
+    'addressLocal',
+  );
+  @override
+  late final GeneratedColumn<String> addressLocal = GeneratedColumn<String>(
+    'address_local',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _mapUrlMeta = const VerificationMeta('mapUrl');
+  @override
+  late final GeneratedColumn<String> mapUrl = GeneratedColumn<String>(
+    'map_url',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _imageMeta = const VerificationMeta('image');
+  @override
+  late final GeneratedColumn<String> image = GeneratedColumn<String>(
+    'image',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _phoneMeta = const VerificationMeta('phone');
+  @override
+  late final GeneratedColumn<String> phone = GeneratedColumn<String>(
+    'phone',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _websiteMeta = const VerificationMeta(
+    'website',
+  );
+  @override
+  late final GeneratedColumn<String> website = GeneratedColumn<String>(
+    'website',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sourceTableMeta = const VerificationMeta(
+    'sourceTable',
+  );
+  @override
+  late final GeneratedColumn<String> sourceTable = GeneratedColumn<String>(
+    'source_table',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sourceIdMeta = const VerificationMeta(
+    'sourceId',
+  );
+  @override
+  late final GeneratedColumn<String> sourceId = GeneratedColumn<String>(
+    'source_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    tripId,
+    cityId,
+    lat,
+    lng,
+    id,
+    name,
+    type,
+    category,
+    addressEn,
+    addressLocal,
+    mapUrl,
+    image,
+    notes,
+    phone,
+    website,
+    sourceTable,
+    sourceId,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'locations';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Location> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('trip_id')) {
+      context.handle(
+        _tripIdMeta,
+        tripId.isAcceptableOrUnknown(data['trip_id']!, _tripIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tripIdMeta);
+    }
+    if (data.containsKey('city_id')) {
+      context.handle(
+        _cityIdMeta,
+        cityId.isAcceptableOrUnknown(data['city_id']!, _cityIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_cityIdMeta);
+    }
+    if (data.containsKey('lat')) {
+      context.handle(
+        _latMeta,
+        lat.isAcceptableOrUnknown(data['lat']!, _latMeta),
+      );
+    }
+    if (data.containsKey('lng')) {
+      context.handle(
+        _lngMeta,
+        lng.isAcceptableOrUnknown(data['lng']!, _lngMeta),
+      );
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('type')) {
+      context.handle(
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_typeMeta);
+    }
+    if (data.containsKey('category')) {
+      context.handle(
+        _categoryMeta,
+        category.isAcceptableOrUnknown(data['category']!, _categoryMeta),
+      );
+    }
+    if (data.containsKey('address_en')) {
+      context.handle(
+        _addressEnMeta,
+        addressEn.isAcceptableOrUnknown(data['address_en']!, _addressEnMeta),
+      );
+    }
+    if (data.containsKey('address_local')) {
+      context.handle(
+        _addressLocalMeta,
+        addressLocal.isAcceptableOrUnknown(
+          data['address_local']!,
+          _addressLocalMeta,
+        ),
+      );
+    }
+    if (data.containsKey('map_url')) {
+      context.handle(
+        _mapUrlMeta,
+        mapUrl.isAcceptableOrUnknown(data['map_url']!, _mapUrlMeta),
+      );
+    }
+    if (data.containsKey('image')) {
+      context.handle(
+        _imageMeta,
+        image.isAcceptableOrUnknown(data['image']!, _imageMeta),
+      );
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
+    if (data.containsKey('phone')) {
+      context.handle(
+        _phoneMeta,
+        phone.isAcceptableOrUnknown(data['phone']!, _phoneMeta),
+      );
+    }
+    if (data.containsKey('website')) {
+      context.handle(
+        _websiteMeta,
+        website.isAcceptableOrUnknown(data['website']!, _websiteMeta),
+      );
+    }
+    if (data.containsKey('source_table')) {
+      context.handle(
+        _sourceTableMeta,
+        sourceTable.isAcceptableOrUnknown(
+          data['source_table']!,
+          _sourceTableMeta,
+        ),
+      );
+    }
+    if (data.containsKey('source_id')) {
+      context.handle(
+        _sourceIdMeta,
+        sourceId.isAcceptableOrUnknown(data['source_id']!, _sourceIdMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Location map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Location(
+      tripId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}trip_id'],
+      )!,
+      cityId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}city_id'],
+      )!,
+      lat: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}lat'],
+      ),
+      lng: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}lng'],
+      ),
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}type'],
+      )!,
+      category: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category'],
+      ),
+      addressEn: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}address_en'],
+      ),
+      addressLocal: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}address_local'],
+      ),
+      mapUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}map_url'],
+      ),
+      image: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}image'],
+      ),
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
+      phone: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}phone'],
+      ),
+      website: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}website'],
+      ),
+      sourceTable: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_table'],
+      ),
+      sourceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_id'],
+      ),
+    );
+  }
+
+  @override
+  $LocationsTable createAlias(String alias) {
+    return $LocationsTable(attachedDatabase, alias);
+  }
+}
+
+class Location extends DataClass implements Insertable<Location> {
+  final int tripId;
+  final int cityId;
+  final double? lat;
+  final double? lng;
+  final int id;
+  final String name;
+  final String type;
+  final String? category;
+  final String? addressEn;
+  final String? addressLocal;
+  final String? mapUrl;
+  final String? image;
+  final String? notes;
+  final String? phone;
+  final String? website;
+  final String? sourceTable;
+  final String? sourceId;
+  const Location({
+    required this.tripId,
+    required this.cityId,
+    this.lat,
+    this.lng,
+    required this.id,
+    required this.name,
+    required this.type,
+    this.category,
+    this.addressEn,
+    this.addressLocal,
+    this.mapUrl,
+    this.image,
+    this.notes,
+    this.phone,
+    this.website,
+    this.sourceTable,
+    this.sourceId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['trip_id'] = Variable<int>(tripId);
+    map['city_id'] = Variable<int>(cityId);
+    if (!nullToAbsent || lat != null) {
+      map['lat'] = Variable<double>(lat);
+    }
+    if (!nullToAbsent || lng != null) {
+      map['lng'] = Variable<double>(lng);
+    }
+    map['id'] = Variable<int>(id);
+    map['name'] = Variable<String>(name);
+    map['type'] = Variable<String>(type);
+    if (!nullToAbsent || category != null) {
+      map['category'] = Variable<String>(category);
+    }
+    if (!nullToAbsent || addressEn != null) {
+      map['address_en'] = Variable<String>(addressEn);
+    }
+    if (!nullToAbsent || addressLocal != null) {
+      map['address_local'] = Variable<String>(addressLocal);
+    }
+    if (!nullToAbsent || mapUrl != null) {
+      map['map_url'] = Variable<String>(mapUrl);
+    }
+    if (!nullToAbsent || image != null) {
+      map['image'] = Variable<String>(image);
+    }
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    if (!nullToAbsent || phone != null) {
+      map['phone'] = Variable<String>(phone);
+    }
+    if (!nullToAbsent || website != null) {
+      map['website'] = Variable<String>(website);
+    }
+    if (!nullToAbsent || sourceTable != null) {
+      map['source_table'] = Variable<String>(sourceTable);
+    }
+    if (!nullToAbsent || sourceId != null) {
+      map['source_id'] = Variable<String>(sourceId);
+    }
+    return map;
+  }
+
+  LocationsCompanion toCompanion(bool nullToAbsent) {
+    return LocationsCompanion(
+      tripId: Value(tripId),
+      cityId: Value(cityId),
+      lat: lat == null && nullToAbsent ? const Value.absent() : Value(lat),
+      lng: lng == null && nullToAbsent ? const Value.absent() : Value(lng),
+      id: Value(id),
+      name: Value(name),
+      type: Value(type),
+      category: category == null && nullToAbsent
+          ? const Value.absent()
+          : Value(category),
+      addressEn: addressEn == null && nullToAbsent
+          ? const Value.absent()
+          : Value(addressEn),
+      addressLocal: addressLocal == null && nullToAbsent
+          ? const Value.absent()
+          : Value(addressLocal),
+      mapUrl: mapUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mapUrl),
+      image: image == null && nullToAbsent
+          ? const Value.absent()
+          : Value(image),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
+      phone: phone == null && nullToAbsent
+          ? const Value.absent()
+          : Value(phone),
+      website: website == null && nullToAbsent
+          ? const Value.absent()
+          : Value(website),
+      sourceTable: sourceTable == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceTable),
+      sourceId: sourceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceId),
+    );
+  }
+
+  factory Location.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Location(
+      tripId: serializer.fromJson<int>(json['tripId']),
+      cityId: serializer.fromJson<int>(json['cityId']),
+      lat: serializer.fromJson<double?>(json['lat']),
+      lng: serializer.fromJson<double?>(json['lng']),
+      id: serializer.fromJson<int>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      type: serializer.fromJson<String>(json['type']),
+      category: serializer.fromJson<String?>(json['category']),
+      addressEn: serializer.fromJson<String?>(json['addressEn']),
+      addressLocal: serializer.fromJson<String?>(json['addressLocal']),
+      mapUrl: serializer.fromJson<String?>(json['mapUrl']),
+      image: serializer.fromJson<String?>(json['image']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      phone: serializer.fromJson<String?>(json['phone']),
+      website: serializer.fromJson<String?>(json['website']),
+      sourceTable: serializer.fromJson<String?>(json['sourceTable']),
+      sourceId: serializer.fromJson<String?>(json['sourceId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'tripId': serializer.toJson<int>(tripId),
+      'cityId': serializer.toJson<int>(cityId),
+      'lat': serializer.toJson<double?>(lat),
+      'lng': serializer.toJson<double?>(lng),
+      'id': serializer.toJson<int>(id),
+      'name': serializer.toJson<String>(name),
+      'type': serializer.toJson<String>(type),
+      'category': serializer.toJson<String?>(category),
+      'addressEn': serializer.toJson<String?>(addressEn),
+      'addressLocal': serializer.toJson<String?>(addressLocal),
+      'mapUrl': serializer.toJson<String?>(mapUrl),
+      'image': serializer.toJson<String?>(image),
+      'notes': serializer.toJson<String?>(notes),
+      'phone': serializer.toJson<String?>(phone),
+      'website': serializer.toJson<String?>(website),
+      'sourceTable': serializer.toJson<String?>(sourceTable),
+      'sourceId': serializer.toJson<String?>(sourceId),
+    };
+  }
+
+  Location copyWith({
+    int? tripId,
+    int? cityId,
+    Value<double?> lat = const Value.absent(),
+    Value<double?> lng = const Value.absent(),
+    int? id,
+    String? name,
+    String? type,
+    Value<String?> category = const Value.absent(),
+    Value<String?> addressEn = const Value.absent(),
+    Value<String?> addressLocal = const Value.absent(),
+    Value<String?> mapUrl = const Value.absent(),
+    Value<String?> image = const Value.absent(),
+    Value<String?> notes = const Value.absent(),
+    Value<String?> phone = const Value.absent(),
+    Value<String?> website = const Value.absent(),
+    Value<String?> sourceTable = const Value.absent(),
+    Value<String?> sourceId = const Value.absent(),
+  }) => Location(
+    tripId: tripId ?? this.tripId,
+    cityId: cityId ?? this.cityId,
+    lat: lat.present ? lat.value : this.lat,
+    lng: lng.present ? lng.value : this.lng,
+    id: id ?? this.id,
+    name: name ?? this.name,
+    type: type ?? this.type,
+    category: category.present ? category.value : this.category,
+    addressEn: addressEn.present ? addressEn.value : this.addressEn,
+    addressLocal: addressLocal.present ? addressLocal.value : this.addressLocal,
+    mapUrl: mapUrl.present ? mapUrl.value : this.mapUrl,
+    image: image.present ? image.value : this.image,
+    notes: notes.present ? notes.value : this.notes,
+    phone: phone.present ? phone.value : this.phone,
+    website: website.present ? website.value : this.website,
+    sourceTable: sourceTable.present ? sourceTable.value : this.sourceTable,
+    sourceId: sourceId.present ? sourceId.value : this.sourceId,
+  );
+  Location copyWithCompanion(LocationsCompanion data) {
+    return Location(
+      tripId: data.tripId.present ? data.tripId.value : this.tripId,
+      cityId: data.cityId.present ? data.cityId.value : this.cityId,
+      lat: data.lat.present ? data.lat.value : this.lat,
+      lng: data.lng.present ? data.lng.value : this.lng,
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      type: data.type.present ? data.type.value : this.type,
+      category: data.category.present ? data.category.value : this.category,
+      addressEn: data.addressEn.present ? data.addressEn.value : this.addressEn,
+      addressLocal: data.addressLocal.present
+          ? data.addressLocal.value
+          : this.addressLocal,
+      mapUrl: data.mapUrl.present ? data.mapUrl.value : this.mapUrl,
+      image: data.image.present ? data.image.value : this.image,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      phone: data.phone.present ? data.phone.value : this.phone,
+      website: data.website.present ? data.website.value : this.website,
+      sourceTable: data.sourceTable.present
+          ? data.sourceTable.value
+          : this.sourceTable,
+      sourceId: data.sourceId.present ? data.sourceId.value : this.sourceId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Location(')
+          ..write('tripId: $tripId, ')
+          ..write('cityId: $cityId, ')
+          ..write('lat: $lat, ')
+          ..write('lng: $lng, ')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('type: $type, ')
+          ..write('category: $category, ')
+          ..write('addressEn: $addressEn, ')
+          ..write('addressLocal: $addressLocal, ')
+          ..write('mapUrl: $mapUrl, ')
+          ..write('image: $image, ')
+          ..write('notes: $notes, ')
+          ..write('phone: $phone, ')
+          ..write('website: $website, ')
+          ..write('sourceTable: $sourceTable, ')
+          ..write('sourceId: $sourceId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    tripId,
+    cityId,
+    lat,
+    lng,
+    id,
+    name,
+    type,
+    category,
+    addressEn,
+    addressLocal,
+    mapUrl,
+    image,
+    notes,
+    phone,
+    website,
+    sourceTable,
+    sourceId,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Location &&
+          other.tripId == this.tripId &&
+          other.cityId == this.cityId &&
+          other.lat == this.lat &&
+          other.lng == this.lng &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.type == this.type &&
+          other.category == this.category &&
+          other.addressEn == this.addressEn &&
+          other.addressLocal == this.addressLocal &&
+          other.mapUrl == this.mapUrl &&
+          other.image == this.image &&
+          other.notes == this.notes &&
+          other.phone == this.phone &&
+          other.website == this.website &&
+          other.sourceTable == this.sourceTable &&
+          other.sourceId == this.sourceId);
+}
+
+class LocationsCompanion extends UpdateCompanion<Location> {
+  final Value<int> tripId;
+  final Value<int> cityId;
+  final Value<double?> lat;
+  final Value<double?> lng;
+  final Value<int> id;
+  final Value<String> name;
+  final Value<String> type;
+  final Value<String?> category;
+  final Value<String?> addressEn;
+  final Value<String?> addressLocal;
+  final Value<String?> mapUrl;
+  final Value<String?> image;
+  final Value<String?> notes;
+  final Value<String?> phone;
+  final Value<String?> website;
+  final Value<String?> sourceTable;
+  final Value<String?> sourceId;
+  const LocationsCompanion({
+    this.tripId = const Value.absent(),
+    this.cityId = const Value.absent(),
+    this.lat = const Value.absent(),
+    this.lng = const Value.absent(),
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.type = const Value.absent(),
+    this.category = const Value.absent(),
+    this.addressEn = const Value.absent(),
+    this.addressLocal = const Value.absent(),
+    this.mapUrl = const Value.absent(),
+    this.image = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.phone = const Value.absent(),
+    this.website = const Value.absent(),
+    this.sourceTable = const Value.absent(),
+    this.sourceId = const Value.absent(),
+  });
+  LocationsCompanion.insert({
+    required int tripId,
+    required int cityId,
+    this.lat = const Value.absent(),
+    this.lng = const Value.absent(),
+    this.id = const Value.absent(),
+    required String name,
+    required String type,
+    this.category = const Value.absent(),
+    this.addressEn = const Value.absent(),
+    this.addressLocal = const Value.absent(),
+    this.mapUrl = const Value.absent(),
+    this.image = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.phone = const Value.absent(),
+    this.website = const Value.absent(),
+    this.sourceTable = const Value.absent(),
+    this.sourceId = const Value.absent(),
+  }) : tripId = Value(tripId),
+       cityId = Value(cityId),
+       name = Value(name),
+       type = Value(type);
+  static Insertable<Location> custom({
+    Expression<int>? tripId,
+    Expression<int>? cityId,
+    Expression<double>? lat,
+    Expression<double>? lng,
+    Expression<int>? id,
+    Expression<String>? name,
+    Expression<String>? type,
+    Expression<String>? category,
+    Expression<String>? addressEn,
+    Expression<String>? addressLocal,
+    Expression<String>? mapUrl,
+    Expression<String>? image,
+    Expression<String>? notes,
+    Expression<String>? phone,
+    Expression<String>? website,
+    Expression<String>? sourceTable,
+    Expression<String>? sourceId,
+  }) {
+    return RawValuesInsertable({
+      if (tripId != null) 'trip_id': tripId,
+      if (cityId != null) 'city_id': cityId,
+      if (lat != null) 'lat': lat,
+      if (lng != null) 'lng': lng,
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (type != null) 'type': type,
+      if (category != null) 'category': category,
+      if (addressEn != null) 'address_en': addressEn,
+      if (addressLocal != null) 'address_local': addressLocal,
+      if (mapUrl != null) 'map_url': mapUrl,
+      if (image != null) 'image': image,
+      if (notes != null) 'notes': notes,
+      if (phone != null) 'phone': phone,
+      if (website != null) 'website': website,
+      if (sourceTable != null) 'source_table': sourceTable,
+      if (sourceId != null) 'source_id': sourceId,
+    });
+  }
+
+  LocationsCompanion copyWith({
+    Value<int>? tripId,
+    Value<int>? cityId,
+    Value<double?>? lat,
+    Value<double?>? lng,
+    Value<int>? id,
+    Value<String>? name,
+    Value<String>? type,
+    Value<String?>? category,
+    Value<String?>? addressEn,
+    Value<String?>? addressLocal,
+    Value<String?>? mapUrl,
+    Value<String?>? image,
+    Value<String?>? notes,
+    Value<String?>? phone,
+    Value<String?>? website,
+    Value<String?>? sourceTable,
+    Value<String?>? sourceId,
+  }) {
+    return LocationsCompanion(
+      tripId: tripId ?? this.tripId,
+      cityId: cityId ?? this.cityId,
+      lat: lat ?? this.lat,
+      lng: lng ?? this.lng,
+      id: id ?? this.id,
+      name: name ?? this.name,
+      type: type ?? this.type,
+      category: category ?? this.category,
+      addressEn: addressEn ?? this.addressEn,
+      addressLocal: addressLocal ?? this.addressLocal,
+      mapUrl: mapUrl ?? this.mapUrl,
+      image: image ?? this.image,
+      notes: notes ?? this.notes,
+      phone: phone ?? this.phone,
+      website: website ?? this.website,
+      sourceTable: sourceTable ?? this.sourceTable,
+      sourceId: sourceId ?? this.sourceId,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (tripId.present) {
+      map['trip_id'] = Variable<int>(tripId.value);
+    }
+    if (cityId.present) {
+      map['city_id'] = Variable<int>(cityId.value);
+    }
+    if (lat.present) {
+      map['lat'] = Variable<double>(lat.value);
+    }
+    if (lng.present) {
+      map['lng'] = Variable<double>(lng.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (type.present) {
+      map['type'] = Variable<String>(type.value);
+    }
+    if (category.present) {
+      map['category'] = Variable<String>(category.value);
+    }
+    if (addressEn.present) {
+      map['address_en'] = Variable<String>(addressEn.value);
+    }
+    if (addressLocal.present) {
+      map['address_local'] = Variable<String>(addressLocal.value);
+    }
+    if (mapUrl.present) {
+      map['map_url'] = Variable<String>(mapUrl.value);
+    }
+    if (image.present) {
+      map['image'] = Variable<String>(image.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (phone.present) {
+      map['phone'] = Variable<String>(phone.value);
+    }
+    if (website.present) {
+      map['website'] = Variable<String>(website.value);
+    }
+    if (sourceTable.present) {
+      map['source_table'] = Variable<String>(sourceTable.value);
+    }
+    if (sourceId.present) {
+      map['source_id'] = Variable<String>(sourceId.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocationsCompanion(')
+          ..write('tripId: $tripId, ')
+          ..write('cityId: $cityId, ')
+          ..write('lat: $lat, ')
+          ..write('lng: $lng, ')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('type: $type, ')
+          ..write('category: $category, ')
+          ..write('addressEn: $addressEn, ')
+          ..write('addressLocal: $addressLocal, ')
+          ..write('mapUrl: $mapUrl, ')
+          ..write('image: $image, ')
+          ..write('notes: $notes, ')
+          ..write('phone: $phone, ')
+          ..write('website: $website, ')
+          ..write('sourceTable: $sourceTable, ')
+          ..write('sourceId: $sourceId')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -6160,11 +7392,12 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ContactsTable contacts = $ContactsTable(this);
   late final $CitiesTable cities = $CitiesTable(this);
   late final $HotelsTable hotels = $HotelsTable(this);
-  late final $ActivitiesTable activities = $ActivitiesTable(this);
   late final $FlightsTable flights = $FlightsTable(this);
   late final $TrainsTable trains = $TrainsTable(this);
+  late final $ItineraryTable itinerary = $ItineraryTable(this);
   late final $PackingItemsTable packingItems = $PackingItemsTable(this);
   late final $TripTipsTable tripTips = $TripTipsTable(this);
+  late final $LocationsTable locations = $LocationsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -6174,11 +7407,12 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     contacts,
     cities,
     hotels,
-    activities,
     flights,
     trains,
+    itinerary,
     packingItems,
     tripTips,
+    locations,
   ];
 }
 
@@ -6317,6 +7551,24 @@ final class $$TripsTableReferences
     ).filter((f) => f.tripId.id.sqlEquals($_itemColumn<int>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_tripTipsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$LocationsTable, List<Location>>
+  _locationsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.locations,
+    aliasName: $_aliasNameGenerator(db.trips.id, db.locations.tripId),
+  );
+
+  $$LocationsTableProcessedTableManager get locationsRefs {
+    final manager = $$LocationsTableTableManager(
+      $_db,
+      $_db.locations,
+    ).filter((f) => f.tripId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_locationsRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -6512,6 +7764,31 @@ class $$TripsTableFilterComposer extends Composer<_$AppDatabase, $TripsTable> {
           }) => $$TripTipsTableFilterComposer(
             $db: $db,
             $table: $db.tripTips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> locationsRefs(
+    Expression<bool> Function($$LocationsTableFilterComposer f) f,
+  ) {
+    final $$LocationsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.locations,
+      getReferencedColumn: (t) => t.tripId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LocationsTableFilterComposer(
+            $db: $db,
+            $table: $db.locations,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -6756,6 +8033,31 @@ class $$TripsTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> locationsRefs<T extends Object>(
+    Expression<T> Function($$LocationsTableAnnotationComposer a) f,
+  ) {
+    final $$LocationsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.locations,
+      getReferencedColumn: (t) => t.tripId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LocationsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.locations,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$TripsTableTableManager
@@ -6778,6 +8080,7 @@ class $$TripsTableTableManager
             bool trainsRefs,
             bool packingItemsRefs,
             bool tripTipsRefs,
+            bool locationsRefs,
           })
         > {
   $$TripsTableTableManager(_$AppDatabase db, $TripsTable table)
@@ -6845,6 +8148,7 @@ class $$TripsTableTableManager
                 trainsRefs = false,
                 packingItemsRefs = false,
                 tripTipsRefs = false,
+                locationsRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -6855,6 +8159,7 @@ class $$TripsTableTableManager
                     if (trainsRefs) db.trains,
                     if (packingItemsRefs) db.packingItems,
                     if (tripTipsRefs) db.tripTips,
+                    if (locationsRefs) db.locations,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -6953,6 +8258,23 @@ class $$TripsTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (locationsRefs)
+                        await $_getPrefetchedData<Trip, $TripsTable, Location>(
+                          currentTable: table,
+                          referencedTable: $$TripsTableReferences
+                              ._locationsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$TripsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).locationsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.tripId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -6980,6 +8302,7 @@ typedef $$TripsTableProcessedTableManager =
         bool trainsRefs,
         bool packingItemsRefs,
         bool tripTipsRefs,
+        bool locationsRefs,
       })
     >;
 typedef $$ContactsTableCreateCompanionBuilder =
@@ -7343,6 +8666,7 @@ typedef $$CitiesTableCreateCompanionBuilder =
       Value<String?> notes,
       Value<DateTime?> arrivalDate,
       Value<DateTime?> departureDate,
+      Value<String?> cityImage,
     });
 typedef $$CitiesTableUpdateCompanionBuilder =
     CitiesCompanion Function({
@@ -7355,6 +8679,7 @@ typedef $$CitiesTableUpdateCompanionBuilder =
       Value<String?> notes,
       Value<DateTime?> arrivalDate,
       Value<DateTime?> departureDate,
+      Value<String?> cityImage,
     });
 
 final class $$CitiesTableReferences
@@ -7397,19 +8722,19 @@ final class $$CitiesTableReferences
     );
   }
 
-  static MultiTypedResultKey<$ActivitiesTable, List<Activity>>
-  _activitiesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.activities,
-    aliasName: $_aliasNameGenerator(db.cities.id, db.activities.cityId),
+  static MultiTypedResultKey<$ItineraryTable, List<ItineraryData>>
+  _itineraryRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.itinerary,
+    aliasName: $_aliasNameGenerator(db.cities.id, db.itinerary.cityId),
   );
 
-  $$ActivitiesTableProcessedTableManager get activitiesRefs {
-    final manager = $$ActivitiesTableTableManager(
+  $$ItineraryTableProcessedTableManager get itineraryRefs {
+    final manager = $$ItineraryTableTableManager(
       $_db,
-      $_db.activities,
+      $_db.itinerary,
     ).filter((f) => f.cityId.id.sqlEquals($_itemColumn<int>('id')!));
 
-    final cache = $_typedResult.readTableOrNull(_activitiesRefsTable($_db));
+    final cache = $_typedResult.readTableOrNull(_itineraryRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -7429,6 +8754,24 @@ final class $$CitiesTableReferences
     ).filter((f) => f.cityId.id.sqlEquals($_itemColumn<int>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_tripTipsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$LocationsTable, List<Location>>
+  _locationsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.locations,
+    aliasName: $_aliasNameGenerator(db.cities.id, db.locations.cityId),
+  );
+
+  $$LocationsTableProcessedTableManager get locationsRefs {
+    final manager = $$LocationsTableTableManager(
+      $_db,
+      $_db.locations,
+    ).filter((f) => f.cityId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_locationsRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -7484,6 +8827,11 @@ class $$CitiesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get cityImage => $composableBuilder(
+    column: $table.cityImage,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$TripsTableFilterComposer get tripId {
     final $$TripsTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -7532,22 +8880,22 @@ class $$CitiesTableFilterComposer
     return f(composer);
   }
 
-  Expression<bool> activitiesRefs(
-    Expression<bool> Function($$ActivitiesTableFilterComposer f) f,
+  Expression<bool> itineraryRefs(
+    Expression<bool> Function($$ItineraryTableFilterComposer f) f,
   ) {
-    final $$ActivitiesTableFilterComposer composer = $composerBuilder(
+    final $$ItineraryTableFilterComposer composer = $composerBuilder(
       composer: this,
       getCurrentColumn: (t) => t.id,
-      referencedTable: $db.activities,
+      referencedTable: $db.itinerary,
       getReferencedColumn: (t) => t.cityId,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$ActivitiesTableFilterComposer(
+          }) => $$ItineraryTableFilterComposer(
             $db: $db,
-            $table: $db.activities,
+            $table: $db.itinerary,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -7573,6 +8921,31 @@ class $$CitiesTableFilterComposer
           }) => $$TripTipsTableFilterComposer(
             $db: $db,
             $table: $db.tripTips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> locationsRefs(
+    Expression<bool> Function($$LocationsTableFilterComposer f) f,
+  ) {
+    final $$LocationsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.locations,
+      getReferencedColumn: (t) => t.cityId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LocationsTableFilterComposer(
+            $db: $db,
+            $table: $db.locations,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -7629,6 +9002,11 @@ class $$CitiesTableOrderingComposer
 
   ColumnOrderings<DateTime> get departureDate => $composableBuilder(
     column: $table.departureDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cityImage => $composableBuilder(
+    column: $table.cityImage,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -7693,6 +9071,9 @@ class $$CitiesTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get cityImage =>
+      $composableBuilder(column: $table.cityImage, builder: (column) => column);
+
   $$TripsTableAnnotationComposer get tripId {
     final $$TripsTableAnnotationComposer composer = $composerBuilder(
       composer: this,
@@ -7741,22 +9122,22 @@ class $$CitiesTableAnnotationComposer
     return f(composer);
   }
 
-  Expression<T> activitiesRefs<T extends Object>(
-    Expression<T> Function($$ActivitiesTableAnnotationComposer a) f,
+  Expression<T> itineraryRefs<T extends Object>(
+    Expression<T> Function($$ItineraryTableAnnotationComposer a) f,
   ) {
-    final $$ActivitiesTableAnnotationComposer composer = $composerBuilder(
+    final $$ItineraryTableAnnotationComposer composer = $composerBuilder(
       composer: this,
       getCurrentColumn: (t) => t.id,
-      referencedTable: $db.activities,
+      referencedTable: $db.itinerary,
       getReferencedColumn: (t) => t.cityId,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$ActivitiesTableAnnotationComposer(
+          }) => $$ItineraryTableAnnotationComposer(
             $db: $db,
-            $table: $db.activities,
+            $table: $db.itinerary,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -7790,6 +9171,31 @@ class $$CitiesTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> locationsRefs<T extends Object>(
+    Expression<T> Function($$LocationsTableAnnotationComposer a) f,
+  ) {
+    final $$LocationsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.locations,
+      getReferencedColumn: (t) => t.cityId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LocationsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.locations,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$CitiesTableTableManager
@@ -7808,8 +9214,9 @@ class $$CitiesTableTableManager
           PrefetchHooks Function({
             bool tripId,
             bool hotelsRefs,
-            bool activitiesRefs,
+            bool itineraryRefs,
             bool tripTipsRefs,
+            bool locationsRefs,
           })
         > {
   $$CitiesTableTableManager(_$AppDatabase db, $CitiesTable table)
@@ -7834,6 +9241,7 @@ class $$CitiesTableTableManager
                 Value<String?> notes = const Value.absent(),
                 Value<DateTime?> arrivalDate = const Value.absent(),
                 Value<DateTime?> departureDate = const Value.absent(),
+                Value<String?> cityImage = const Value.absent(),
               }) => CitiesCompanion(
                 tripId: tripId,
                 lat: lat,
@@ -7844,6 +9252,7 @@ class $$CitiesTableTableManager
                 notes: notes,
                 arrivalDate: arrivalDate,
                 departureDate: departureDate,
+                cityImage: cityImage,
               ),
           createCompanionCallback:
               ({
@@ -7856,6 +9265,7 @@ class $$CitiesTableTableManager
                 Value<String?> notes = const Value.absent(),
                 Value<DateTime?> arrivalDate = const Value.absent(),
                 Value<DateTime?> departureDate = const Value.absent(),
+                Value<String?> cityImage = const Value.absent(),
               }) => CitiesCompanion.insert(
                 tripId: tripId,
                 lat: lat,
@@ -7866,6 +9276,7 @@ class $$CitiesTableTableManager
                 notes: notes,
                 arrivalDate: arrivalDate,
                 departureDate: departureDate,
+                cityImage: cityImage,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -7877,15 +9288,17 @@ class $$CitiesTableTableManager
               ({
                 tripId = false,
                 hotelsRefs = false,
-                activitiesRefs = false,
+                itineraryRefs = false,
                 tripTipsRefs = false,
+                locationsRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
                     if (hotelsRefs) db.hotels,
-                    if (activitiesRefs) db.activities,
+                    if (itineraryRefs) db.itinerary,
                     if (tripTipsRefs) db.tripTips,
+                    if (locationsRefs) db.locations,
                   ],
                   addJoins:
                       <
@@ -7934,17 +9347,21 @@ class $$CitiesTableTableManager
                               ),
                           typedResults: items,
                         ),
-                      if (activitiesRefs)
-                        await $_getPrefetchedData<City, $CitiesTable, Activity>(
+                      if (itineraryRefs)
+                        await $_getPrefetchedData<
+                          City,
+                          $CitiesTable,
+                          ItineraryData
+                        >(
                           currentTable: table,
                           referencedTable: $$CitiesTableReferences
-                              ._activitiesRefsTable(db),
+                              ._itineraryRefsTable(db),
                           managerFromTypedResult: (p0) =>
                               $$CitiesTableReferences(
                                 db,
                                 table,
                                 p0,
-                              ).activitiesRefs,
+                              ).itineraryRefs,
                           referencedItemsForCurrentItem:
                               (item, referencedItems) => referencedItems.where(
                                 (e) => e.cityId == item.id,
@@ -7962,6 +9379,23 @@ class $$CitiesTableTableManager
                                 table,
                                 p0,
                               ).tripTipsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.cityId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (locationsRefs)
+                        await $_getPrefetchedData<City, $CitiesTable, Location>(
+                          currentTable: table,
+                          referencedTable: $$CitiesTableReferences
+                              ._locationsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$CitiesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).locationsRefs,
                           referencedItemsForCurrentItem:
                               (item, referencedItems) => referencedItems.where(
                                 (e) => e.cityId == item.id,
@@ -7991,8 +9425,9 @@ typedef $$CitiesTableProcessedTableManager =
       PrefetchHooks Function({
         bool tripId,
         bool hotelsRefs,
-        bool activitiesRefs,
+        bool itineraryRefs,
         bool tripTipsRefs,
+        bool locationsRefs,
       })
     >;
 typedef $$HotelsTableCreateCompanionBuilder =
@@ -8000,10 +9435,6 @@ typedef $$HotelsTableCreateCompanionBuilder =
       required int cityId,
       Value<double?> lat,
       Value<double?> lng,
-      Value<String?> address,
-      Value<String?> localAddress,
-      Value<String?> phone,
-      Value<String?> website,
       Value<int> id,
       required String name,
       Value<String?> localName,
@@ -8016,16 +9447,17 @@ typedef $$HotelsTableCreateCompanionBuilder =
       Value<double?> pricePerPerson,
       Value<double?> pricePerPersonNight,
       Value<String?> mapUrl,
+      Value<String?> hotelImage,
+      Value<String?> addressEn,
+      Value<String?> addressLocal,
+      Value<String?> phone,
+      Value<String?> website,
     });
 typedef $$HotelsTableUpdateCompanionBuilder =
     HotelsCompanion Function({
       Value<int> cityId,
       Value<double?> lat,
       Value<double?> lng,
-      Value<String?> address,
-      Value<String?> localAddress,
-      Value<String?> phone,
-      Value<String?> website,
       Value<int> id,
       Value<String> name,
       Value<String?> localName,
@@ -8038,6 +9470,11 @@ typedef $$HotelsTableUpdateCompanionBuilder =
       Value<double?> pricePerPerson,
       Value<double?> pricePerPersonNight,
       Value<String?> mapUrl,
+      Value<String?> hotelImage,
+      Value<String?> addressEn,
+      Value<String?> addressLocal,
+      Value<String?> phone,
+      Value<String?> website,
     });
 
 final class $$HotelsTableReferences
@@ -8061,6 +9498,24 @@ final class $$HotelsTableReferences
       manager.$state.copyWith(prefetchedData: [item]),
     );
   }
+
+  static MultiTypedResultKey<$ItineraryTable, List<ItineraryData>>
+  _itineraryRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.itinerary,
+    aliasName: $_aliasNameGenerator(db.hotels.id, db.itinerary.hotelId),
+  );
+
+  $$ItineraryTableProcessedTableManager get itineraryRefs {
+    final manager = $$ItineraryTableTableManager(
+      $_db,
+      $_db.itinerary,
+    ).filter((f) => f.hotelId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_itineraryRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$HotelsTableFilterComposer
@@ -8079,26 +9534,6 @@ class $$HotelsTableFilterComposer
 
   ColumnFilters<double> get lng => $composableBuilder(
     column: $table.lng,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get address => $composableBuilder(
-    column: $table.address,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get localAddress => $composableBuilder(
-    column: $table.localAddress,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get phone => $composableBuilder(
-    column: $table.phone,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get website => $composableBuilder(
-    column: $table.website,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8162,6 +9597,31 @@ class $$HotelsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get hotelImage => $composableBuilder(
+    column: $table.hotelImage,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get addressEn => $composableBuilder(
+    column: $table.addressEn,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get addressLocal => $composableBuilder(
+    column: $table.addressLocal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get phone => $composableBuilder(
+    column: $table.phone,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get website => $composableBuilder(
+    column: $table.website,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$CitiesTableFilterComposer get cityId {
     final $$CitiesTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -8184,6 +9644,31 @@ class $$HotelsTableFilterComposer
     );
     return composer;
   }
+
+  Expression<bool> itineraryRefs(
+    Expression<bool> Function($$ItineraryTableFilterComposer f) f,
+  ) {
+    final $$ItineraryTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.itinerary,
+      getReferencedColumn: (t) => t.hotelId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ItineraryTableFilterComposer(
+            $db: $db,
+            $table: $db.itinerary,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$HotelsTableOrderingComposer
@@ -8202,26 +9687,6 @@ class $$HotelsTableOrderingComposer
 
   ColumnOrderings<double> get lng => $composableBuilder(
     column: $table.lng,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get address => $composableBuilder(
-    column: $table.address,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get localAddress => $composableBuilder(
-    column: $table.localAddress,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get phone => $composableBuilder(
-    column: $table.phone,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get website => $composableBuilder(
-    column: $table.website,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -8285,6 +9750,31 @@ class $$HotelsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get hotelImage => $composableBuilder(
+    column: $table.hotelImage,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get addressEn => $composableBuilder(
+    column: $table.addressEn,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get addressLocal => $composableBuilder(
+    column: $table.addressLocal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get phone => $composableBuilder(
+    column: $table.phone,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get website => $composableBuilder(
+    column: $table.website,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$CitiesTableOrderingComposer get cityId {
     final $$CitiesTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -8323,20 +9813,6 @@ class $$HotelsTableAnnotationComposer
 
   GeneratedColumn<double> get lng =>
       $composableBuilder(column: $table.lng, builder: (column) => column);
-
-  GeneratedColumn<String> get address =>
-      $composableBuilder(column: $table.address, builder: (column) => column);
-
-  GeneratedColumn<String> get localAddress => $composableBuilder(
-    column: $table.localAddress,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get phone =>
-      $composableBuilder(column: $table.phone, builder: (column) => column);
-
-  GeneratedColumn<String> get website =>
-      $composableBuilder(column: $table.website, builder: (column) => column);
 
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
@@ -8386,6 +9862,25 @@ class $$HotelsTableAnnotationComposer
   GeneratedColumn<String> get mapUrl =>
       $composableBuilder(column: $table.mapUrl, builder: (column) => column);
 
+  GeneratedColumn<String> get hotelImage => $composableBuilder(
+    column: $table.hotelImage,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get addressEn =>
+      $composableBuilder(column: $table.addressEn, builder: (column) => column);
+
+  GeneratedColumn<String> get addressLocal => $composableBuilder(
+    column: $table.addressLocal,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get phone =>
+      $composableBuilder(column: $table.phone, builder: (column) => column);
+
+  GeneratedColumn<String> get website =>
+      $composableBuilder(column: $table.website, builder: (column) => column);
+
   $$CitiesTableAnnotationComposer get cityId {
     final $$CitiesTableAnnotationComposer composer = $composerBuilder(
       composer: this,
@@ -8408,6 +9903,31 @@ class $$HotelsTableAnnotationComposer
     );
     return composer;
   }
+
+  Expression<T> itineraryRefs<T extends Object>(
+    Expression<T> Function($$ItineraryTableAnnotationComposer a) f,
+  ) {
+    final $$ItineraryTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.itinerary,
+      getReferencedColumn: (t) => t.hotelId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ItineraryTableAnnotationComposer(
+            $db: $db,
+            $table: $db.itinerary,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$HotelsTableTableManager
@@ -8423,7 +9943,7 @@ class $$HotelsTableTableManager
           $$HotelsTableUpdateCompanionBuilder,
           (Hotel, $$HotelsTableReferences),
           Hotel,
-          PrefetchHooks Function({bool cityId})
+          PrefetchHooks Function({bool cityId, bool itineraryRefs})
         > {
   $$HotelsTableTableManager(_$AppDatabase db, $HotelsTable table)
     : super(
@@ -8441,10 +9961,6 @@ class $$HotelsTableTableManager
                 Value<int> cityId = const Value.absent(),
                 Value<double?> lat = const Value.absent(),
                 Value<double?> lng = const Value.absent(),
-                Value<String?> address = const Value.absent(),
-                Value<String?> localAddress = const Value.absent(),
-                Value<String?> phone = const Value.absent(),
-                Value<String?> website = const Value.absent(),
                 Value<int> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String?> localName = const Value.absent(),
@@ -8457,14 +9973,15 @@ class $$HotelsTableTableManager
                 Value<double?> pricePerPerson = const Value.absent(),
                 Value<double?> pricePerPersonNight = const Value.absent(),
                 Value<String?> mapUrl = const Value.absent(),
+                Value<String?> hotelImage = const Value.absent(),
+                Value<String?> addressEn = const Value.absent(),
+                Value<String?> addressLocal = const Value.absent(),
+                Value<String?> phone = const Value.absent(),
+                Value<String?> website = const Value.absent(),
               }) => HotelsCompanion(
                 cityId: cityId,
                 lat: lat,
                 lng: lng,
-                address: address,
-                localAddress: localAddress,
-                phone: phone,
-                website: website,
                 id: id,
                 name: name,
                 localName: localName,
@@ -8477,16 +9994,17 @@ class $$HotelsTableTableManager
                 pricePerPerson: pricePerPerson,
                 pricePerPersonNight: pricePerPersonNight,
                 mapUrl: mapUrl,
+                hotelImage: hotelImage,
+                addressEn: addressEn,
+                addressLocal: addressLocal,
+                phone: phone,
+                website: website,
               ),
           createCompanionCallback:
               ({
                 required int cityId,
                 Value<double?> lat = const Value.absent(),
                 Value<double?> lng = const Value.absent(),
-                Value<String?> address = const Value.absent(),
-                Value<String?> localAddress = const Value.absent(),
-                Value<String?> phone = const Value.absent(),
-                Value<String?> website = const Value.absent(),
                 Value<int> id = const Value.absent(),
                 required String name,
                 Value<String?> localName = const Value.absent(),
@@ -8499,14 +10017,15 @@ class $$HotelsTableTableManager
                 Value<double?> pricePerPerson = const Value.absent(),
                 Value<double?> pricePerPersonNight = const Value.absent(),
                 Value<String?> mapUrl = const Value.absent(),
+                Value<String?> hotelImage = const Value.absent(),
+                Value<String?> addressEn = const Value.absent(),
+                Value<String?> addressLocal = const Value.absent(),
+                Value<String?> phone = const Value.absent(),
+                Value<String?> website = const Value.absent(),
               }) => HotelsCompanion.insert(
                 cityId: cityId,
                 lat: lat,
                 lng: lng,
-                address: address,
-                localAddress: localAddress,
-                phone: phone,
-                website: website,
                 id: id,
                 name: name,
                 localName: localName,
@@ -8519,6 +10038,11 @@ class $$HotelsTableTableManager
                 pricePerPerson: pricePerPerson,
                 pricePerPersonNight: pricePerPersonNight,
                 mapUrl: mapUrl,
+                hotelImage: hotelImage,
+                addressEn: addressEn,
+                addressLocal: addressLocal,
+                phone: phone,
+                website: website,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -8526,10 +10050,10 @@ class $$HotelsTableTableManager
                     (e.readTable(table), $$HotelsTableReferences(db, table, e)),
               )
               .toList(),
-          prefetchHooksCallback: ({cityId = false}) {
+          prefetchHooksCallback: ({cityId = false, itineraryRefs = false}) {
             return PrefetchHooks(
               db: db,
-              explicitlyWatchedTables: [],
+              explicitlyWatchedTables: [if (itineraryRefs) db.itinerary],
               addJoins:
                   <
                     T extends TableManagerState<
@@ -8563,7 +10087,23 @@ class $$HotelsTableTableManager
                     return state;
                   },
               getPrefetchedDataCallback: (items) async {
-                return [];
+                return [
+                  if (itineraryRefs)
+                    await $_getPrefetchedData<
+                      Hotel,
+                      $HotelsTable,
+                      ItineraryData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$HotelsTableReferences
+                          ._itineraryRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$HotelsTableReferences(db, table, p0).itineraryRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where((e) => e.hotelId == item.id),
+                      typedResults: items,
+                    ),
+                ];
               },
             );
           },
@@ -8583,551 +10123,7 @@ typedef $$HotelsTableProcessedTableManager =
       $$HotelsTableUpdateCompanionBuilder,
       (Hotel, $$HotelsTableReferences),
       Hotel,
-      PrefetchHooks Function({bool cityId})
-    >;
-typedef $$ActivitiesTableCreateCompanionBuilder =
-    ActivitiesCompanion Function({
-      required int cityId,
-      Value<double?> lat,
-      Value<double?> lng,
-      Value<int> id,
-      required DateTime date,
-      Value<String?> time,
-      required String title,
-      Value<String?> activityType,
-      Value<String?> location,
-      Value<String?> notes,
-      Value<String?> url,
-      Value<double?> price,
-      Value<String?> currency,
-      Value<int?> duration,
-      Value<String?> availability,
-      Value<String?> status,
-      Value<DateTime?> bookedAt,
-    });
-typedef $$ActivitiesTableUpdateCompanionBuilder =
-    ActivitiesCompanion Function({
-      Value<int> cityId,
-      Value<double?> lat,
-      Value<double?> lng,
-      Value<int> id,
-      Value<DateTime> date,
-      Value<String?> time,
-      Value<String> title,
-      Value<String?> activityType,
-      Value<String?> location,
-      Value<String?> notes,
-      Value<String?> url,
-      Value<double?> price,
-      Value<String?> currency,
-      Value<int?> duration,
-      Value<String?> availability,
-      Value<String?> status,
-      Value<DateTime?> bookedAt,
-    });
-
-final class $$ActivitiesTableReferences
-    extends BaseReferences<_$AppDatabase, $ActivitiesTable, Activity> {
-  $$ActivitiesTableReferences(super.$_db, super.$_table, super.$_typedResult);
-
-  static $CitiesTable _cityIdTable(_$AppDatabase db) => db.cities.createAlias(
-    $_aliasNameGenerator(db.activities.cityId, db.cities.id),
-  );
-
-  $$CitiesTableProcessedTableManager get cityId {
-    final $_column = $_itemColumn<int>('city_id')!;
-
-    final manager = $$CitiesTableTableManager(
-      $_db,
-      $_db.cities,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_cityIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-}
-
-class $$ActivitiesTableFilterComposer
-    extends Composer<_$AppDatabase, $ActivitiesTable> {
-  $$ActivitiesTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<double> get lat => $composableBuilder(
-    column: $table.lat,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<double> get lng => $composableBuilder(
-    column: $table.lng,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get date => $composableBuilder(
-    column: $table.date,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get time => $composableBuilder(
-    column: $table.time,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get title => $composableBuilder(
-    column: $table.title,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get activityType => $composableBuilder(
-    column: $table.activityType,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get location => $composableBuilder(
-    column: $table.location,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get notes => $composableBuilder(
-    column: $table.notes,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get url => $composableBuilder(
-    column: $table.url,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<double> get price => $composableBuilder(
-    column: $table.price,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get currency => $composableBuilder(
-    column: $table.currency,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get duration => $composableBuilder(
-    column: $table.duration,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get availability => $composableBuilder(
-    column: $table.availability,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get status => $composableBuilder(
-    column: $table.status,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get bookedAt => $composableBuilder(
-    column: $table.bookedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  $$CitiesTableFilterComposer get cityId {
-    final $$CitiesTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.cityId,
-      referencedTable: $db.cities,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$CitiesTableFilterComposer(
-            $db: $db,
-            $table: $db.cities,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$ActivitiesTableOrderingComposer
-    extends Composer<_$AppDatabase, $ActivitiesTable> {
-  $$ActivitiesTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<double> get lat => $composableBuilder(
-    column: $table.lat,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<double> get lng => $composableBuilder(
-    column: $table.lng,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get date => $composableBuilder(
-    column: $table.date,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get time => $composableBuilder(
-    column: $table.time,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get title => $composableBuilder(
-    column: $table.title,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get activityType => $composableBuilder(
-    column: $table.activityType,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get location => $composableBuilder(
-    column: $table.location,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get notes => $composableBuilder(
-    column: $table.notes,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get url => $composableBuilder(
-    column: $table.url,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<double> get price => $composableBuilder(
-    column: $table.price,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get currency => $composableBuilder(
-    column: $table.currency,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get duration => $composableBuilder(
-    column: $table.duration,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get availability => $composableBuilder(
-    column: $table.availability,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get status => $composableBuilder(
-    column: $table.status,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get bookedAt => $composableBuilder(
-    column: $table.bookedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  $$CitiesTableOrderingComposer get cityId {
-    final $$CitiesTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.cityId,
-      referencedTable: $db.cities,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$CitiesTableOrderingComposer(
-            $db: $db,
-            $table: $db.cities,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$ActivitiesTableAnnotationComposer
-    extends Composer<_$AppDatabase, $ActivitiesTable> {
-  $$ActivitiesTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<double> get lat =>
-      $composableBuilder(column: $table.lat, builder: (column) => column);
-
-  GeneratedColumn<double> get lng =>
-      $composableBuilder(column: $table.lng, builder: (column) => column);
-
-  GeneratedColumn<int> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get date =>
-      $composableBuilder(column: $table.date, builder: (column) => column);
-
-  GeneratedColumn<String> get time =>
-      $composableBuilder(column: $table.time, builder: (column) => column);
-
-  GeneratedColumn<String> get title =>
-      $composableBuilder(column: $table.title, builder: (column) => column);
-
-  GeneratedColumn<String> get activityType => $composableBuilder(
-    column: $table.activityType,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get location =>
-      $composableBuilder(column: $table.location, builder: (column) => column);
-
-  GeneratedColumn<String> get notes =>
-      $composableBuilder(column: $table.notes, builder: (column) => column);
-
-  GeneratedColumn<String> get url =>
-      $composableBuilder(column: $table.url, builder: (column) => column);
-
-  GeneratedColumn<double> get price =>
-      $composableBuilder(column: $table.price, builder: (column) => column);
-
-  GeneratedColumn<String> get currency =>
-      $composableBuilder(column: $table.currency, builder: (column) => column);
-
-  GeneratedColumn<int> get duration =>
-      $composableBuilder(column: $table.duration, builder: (column) => column);
-
-  GeneratedColumn<String> get availability => $composableBuilder(
-    column: $table.availability,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get status =>
-      $composableBuilder(column: $table.status, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get bookedAt =>
-      $composableBuilder(column: $table.bookedAt, builder: (column) => column);
-
-  $$CitiesTableAnnotationComposer get cityId {
-    final $$CitiesTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.cityId,
-      referencedTable: $db.cities,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$CitiesTableAnnotationComposer(
-            $db: $db,
-            $table: $db.cities,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$ActivitiesTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $ActivitiesTable,
-          Activity,
-          $$ActivitiesTableFilterComposer,
-          $$ActivitiesTableOrderingComposer,
-          $$ActivitiesTableAnnotationComposer,
-          $$ActivitiesTableCreateCompanionBuilder,
-          $$ActivitiesTableUpdateCompanionBuilder,
-          (Activity, $$ActivitiesTableReferences),
-          Activity,
-          PrefetchHooks Function({bool cityId})
-        > {
-  $$ActivitiesTableTableManager(_$AppDatabase db, $ActivitiesTable table)
-    : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$ActivitiesTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$ActivitiesTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$ActivitiesTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<int> cityId = const Value.absent(),
-                Value<double?> lat = const Value.absent(),
-                Value<double?> lng = const Value.absent(),
-                Value<int> id = const Value.absent(),
-                Value<DateTime> date = const Value.absent(),
-                Value<String?> time = const Value.absent(),
-                Value<String> title = const Value.absent(),
-                Value<String?> activityType = const Value.absent(),
-                Value<String?> location = const Value.absent(),
-                Value<String?> notes = const Value.absent(),
-                Value<String?> url = const Value.absent(),
-                Value<double?> price = const Value.absent(),
-                Value<String?> currency = const Value.absent(),
-                Value<int?> duration = const Value.absent(),
-                Value<String?> availability = const Value.absent(),
-                Value<String?> status = const Value.absent(),
-                Value<DateTime?> bookedAt = const Value.absent(),
-              }) => ActivitiesCompanion(
-                cityId: cityId,
-                lat: lat,
-                lng: lng,
-                id: id,
-                date: date,
-                time: time,
-                title: title,
-                activityType: activityType,
-                location: location,
-                notes: notes,
-                url: url,
-                price: price,
-                currency: currency,
-                duration: duration,
-                availability: availability,
-                status: status,
-                bookedAt: bookedAt,
-              ),
-          createCompanionCallback:
-              ({
-                required int cityId,
-                Value<double?> lat = const Value.absent(),
-                Value<double?> lng = const Value.absent(),
-                Value<int> id = const Value.absent(),
-                required DateTime date,
-                Value<String?> time = const Value.absent(),
-                required String title,
-                Value<String?> activityType = const Value.absent(),
-                Value<String?> location = const Value.absent(),
-                Value<String?> notes = const Value.absent(),
-                Value<String?> url = const Value.absent(),
-                Value<double?> price = const Value.absent(),
-                Value<String?> currency = const Value.absent(),
-                Value<int?> duration = const Value.absent(),
-                Value<String?> availability = const Value.absent(),
-                Value<String?> status = const Value.absent(),
-                Value<DateTime?> bookedAt = const Value.absent(),
-              }) => ActivitiesCompanion.insert(
-                cityId: cityId,
-                lat: lat,
-                lng: lng,
-                id: id,
-                date: date,
-                time: time,
-                title: title,
-                activityType: activityType,
-                location: location,
-                notes: notes,
-                url: url,
-                price: price,
-                currency: currency,
-                duration: duration,
-                availability: availability,
-                status: status,
-                bookedAt: bookedAt,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $$ActivitiesTableReferences(db, table, e),
-                ),
-              )
-              .toList(),
-          prefetchHooksCallback: ({cityId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (cityId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.cityId,
-                                referencedTable: $$ActivitiesTableReferences
-                                    ._cityIdTable(db),
-                                referencedColumn: $$ActivitiesTableReferences
-                                    ._cityIdTable(db)
-                                    .id,
-                              )
-                              as T;
-                    }
-
-                    return state;
-                  },
-              getPrefetchedDataCallback: (items) async {
-                return [];
-              },
-            );
-          },
-        ),
-      );
-}
-
-typedef $$ActivitiesTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $ActivitiesTable,
-      Activity,
-      $$ActivitiesTableFilterComposer,
-      $$ActivitiesTableOrderingComposer,
-      $$ActivitiesTableAnnotationComposer,
-      $$ActivitiesTableCreateCompanionBuilder,
-      $$ActivitiesTableUpdateCompanionBuilder,
-      (Activity, $$ActivitiesTableReferences),
-      Activity,
-      PrefetchHooks Function({bool cityId})
+      PrefetchHooks Function({bool cityId, bool itineraryRefs})
     >;
 typedef $$FlightsTableCreateCompanionBuilder =
     FlightsCompanion Function({
@@ -9185,6 +10181,24 @@ final class $$FlightsTableReferences
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$ItineraryTable, List<ItineraryData>>
+  _itineraryRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.itinerary,
+    aliasName: $_aliasNameGenerator(db.flights.id, db.itinerary.flightId),
+  );
+
+  $$ItineraryTableProcessedTableManager get itineraryRefs {
+    final manager = $$ItineraryTableTableManager(
+      $_db,
+      $_db.itinerary,
+    ).filter((f) => f.flightId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_itineraryRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
     );
   }
 }
@@ -9289,6 +10303,31 @@ class $$FlightsTableFilterComposer
           ),
     );
     return composer;
+  }
+
+  Expression<bool> itineraryRefs(
+    Expression<bool> Function($$ItineraryTableFilterComposer f) f,
+  ) {
+    final $$ItineraryTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.itinerary,
+      getReferencedColumn: (t) => t.flightId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ItineraryTableFilterComposer(
+            $db: $db,
+            $table: $db.itinerary,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
   }
 }
 
@@ -9480,6 +10519,31 @@ class $$FlightsTableAnnotationComposer
     );
     return composer;
   }
+
+  Expression<T> itineraryRefs<T extends Object>(
+    Expression<T> Function($$ItineraryTableAnnotationComposer a) f,
+  ) {
+    final $$ItineraryTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.itinerary,
+      getReferencedColumn: (t) => t.flightId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ItineraryTableAnnotationComposer(
+            $db: $db,
+            $table: $db.itinerary,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$FlightsTableTableManager
@@ -9495,7 +10559,7 @@ class $$FlightsTableTableManager
           $$FlightsTableUpdateCompanionBuilder,
           (Flight, $$FlightsTableReferences),
           Flight,
-          PrefetchHooks Function({bool tripId})
+          PrefetchHooks Function({bool tripId, bool itineraryRefs})
         > {
   $$FlightsTableTableManager(_$AppDatabase db, $FlightsTable table)
     : super(
@@ -9584,10 +10648,10 @@ class $$FlightsTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({tripId = false}) {
+          prefetchHooksCallback: ({tripId = false, itineraryRefs = false}) {
             return PrefetchHooks(
               db: db,
-              explicitlyWatchedTables: [],
+              explicitlyWatchedTables: [if (itineraryRefs) db.itinerary],
               addJoins:
                   <
                     T extends TableManagerState<
@@ -9621,7 +10685,23 @@ class $$FlightsTableTableManager
                     return state;
                   },
               getPrefetchedDataCallback: (items) async {
-                return [];
+                return [
+                  if (itineraryRefs)
+                    await $_getPrefetchedData<
+                      Flight,
+                      $FlightsTable,
+                      ItineraryData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$FlightsTableReferences
+                          ._itineraryRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$FlightsTableReferences(db, table, p0).itineraryRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where((e) => e.flightId == item.id),
+                      typedResults: items,
+                    ),
+                ];
               },
             );
           },
@@ -9641,7 +10721,7 @@ typedef $$FlightsTableProcessedTableManager =
       $$FlightsTableUpdateCompanionBuilder,
       (Flight, $$FlightsTableReferences),
       Flight,
-      PrefetchHooks Function({bool tripId})
+      PrefetchHooks Function({bool tripId, bool itineraryRefs})
     >;
 typedef $$TrainsTableCreateCompanionBuilder =
     TrainsCompanion Function({
@@ -9698,6 +10778,24 @@ final class $$TrainsTableReferences
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$ItineraryTable, List<ItineraryData>>
+  _itineraryRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.itinerary,
+    aliasName: $_aliasNameGenerator(db.trains.id, db.itinerary.trainId),
+  );
+
+  $$ItineraryTableProcessedTableManager get itineraryRefs {
+    final manager = $$ItineraryTableTableManager(
+      $_db,
+      $_db.itinerary,
+    ).filter((f) => f.trainId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_itineraryRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
     );
   }
 }
@@ -9802,6 +10900,31 @@ class $$TrainsTableFilterComposer
           ),
     );
     return composer;
+  }
+
+  Expression<bool> itineraryRefs(
+    Expression<bool> Function($$ItineraryTableFilterComposer f) f,
+  ) {
+    final $$ItineraryTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.itinerary,
+      getReferencedColumn: (t) => t.trainId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ItineraryTableFilterComposer(
+            $db: $db,
+            $table: $db.itinerary,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
   }
 }
 
@@ -9993,6 +11116,31 @@ class $$TrainsTableAnnotationComposer
     );
     return composer;
   }
+
+  Expression<T> itineraryRefs<T extends Object>(
+    Expression<T> Function($$ItineraryTableAnnotationComposer a) f,
+  ) {
+    final $$ItineraryTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.itinerary,
+      getReferencedColumn: (t) => t.trainId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ItineraryTableAnnotationComposer(
+            $db: $db,
+            $table: $db.itinerary,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$TrainsTableTableManager
@@ -10008,7 +11156,7 @@ class $$TrainsTableTableManager
           $$TrainsTableUpdateCompanionBuilder,
           (Train, $$TrainsTableReferences),
           Train,
-          PrefetchHooks Function({bool tripId})
+          PrefetchHooks Function({bool tripId, bool itineraryRefs})
         > {
   $$TrainsTableTableManager(_$AppDatabase db, $TrainsTable table)
     : super(
@@ -10095,10 +11243,10 @@ class $$TrainsTableTableManager
                     (e.readTable(table), $$TrainsTableReferences(db, table, e)),
               )
               .toList(),
-          prefetchHooksCallback: ({tripId = false}) {
+          prefetchHooksCallback: ({tripId = false, itineraryRefs = false}) {
             return PrefetchHooks(
               db: db,
-              explicitlyWatchedTables: [],
+              explicitlyWatchedTables: [if (itineraryRefs) db.itinerary],
               addJoins:
                   <
                     T extends TableManagerState<
@@ -10132,7 +11280,23 @@ class $$TrainsTableTableManager
                     return state;
                   },
               getPrefetchedDataCallback: (items) async {
-                return [];
+                return [
+                  if (itineraryRefs)
+                    await $_getPrefetchedData<
+                      Train,
+                      $TrainsTable,
+                      ItineraryData
+                    >(
+                      currentTable: table,
+                      referencedTable: $$TrainsTableReferences
+                          ._itineraryRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$TrainsTableReferences(db, table, p0).itineraryRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where((e) => e.trainId == item.id),
+                      typedResults: items,
+                    ),
+                ];
               },
             );
           },
@@ -10152,7 +11316,901 @@ typedef $$TrainsTableProcessedTableManager =
       $$TrainsTableUpdateCompanionBuilder,
       (Train, $$TrainsTableReferences),
       Train,
-      PrefetchHooks Function({bool tripId})
+      PrefetchHooks Function({bool tripId, bool itineraryRefs})
+    >;
+typedef $$ItineraryTableCreateCompanionBuilder =
+    ItineraryCompanion Function({
+      required int cityId,
+      Value<double?> lat,
+      Value<double?> lng,
+      Value<int> id,
+      required DateTime date,
+      Value<String?> time,
+      required String title,
+      Value<String?> type,
+      Value<String?> location,
+      Value<String?> notes,
+      Value<String?> url,
+      Value<double?> price,
+      Value<String?> currency,
+      Value<int?> duration,
+      Value<String?> availability,
+      Value<String?> status,
+      Value<DateTime?> bookedAt,
+      Value<int?> flightId,
+      Value<int?> trainId,
+      Value<int?> hotelId,
+      Value<String?> image,
+    });
+typedef $$ItineraryTableUpdateCompanionBuilder =
+    ItineraryCompanion Function({
+      Value<int> cityId,
+      Value<double?> lat,
+      Value<double?> lng,
+      Value<int> id,
+      Value<DateTime> date,
+      Value<String?> time,
+      Value<String> title,
+      Value<String?> type,
+      Value<String?> location,
+      Value<String?> notes,
+      Value<String?> url,
+      Value<double?> price,
+      Value<String?> currency,
+      Value<int?> duration,
+      Value<String?> availability,
+      Value<String?> status,
+      Value<DateTime?> bookedAt,
+      Value<int?> flightId,
+      Value<int?> trainId,
+      Value<int?> hotelId,
+      Value<String?> image,
+    });
+
+final class $$ItineraryTableReferences
+    extends BaseReferences<_$AppDatabase, $ItineraryTable, ItineraryData> {
+  $$ItineraryTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $CitiesTable _cityIdTable(_$AppDatabase db) => db.cities.createAlias(
+    $_aliasNameGenerator(db.itinerary.cityId, db.cities.id),
+  );
+
+  $$CitiesTableProcessedTableManager get cityId {
+    final $_column = $_itemColumn<int>('city_id')!;
+
+    final manager = $$CitiesTableTableManager(
+      $_db,
+      $_db.cities,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_cityIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $FlightsTable _flightIdTable(_$AppDatabase db) => db.flights
+      .createAlias($_aliasNameGenerator(db.itinerary.flightId, db.flights.id));
+
+  $$FlightsTableProcessedTableManager? get flightId {
+    final $_column = $_itemColumn<int>('flight_id');
+    if ($_column == null) return null;
+    final manager = $$FlightsTableTableManager(
+      $_db,
+      $_db.flights,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_flightIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $TrainsTable _trainIdTable(_$AppDatabase db) => db.trains.createAlias(
+    $_aliasNameGenerator(db.itinerary.trainId, db.trains.id),
+  );
+
+  $$TrainsTableProcessedTableManager? get trainId {
+    final $_column = $_itemColumn<int>('train_id');
+    if ($_column == null) return null;
+    final manager = $$TrainsTableTableManager(
+      $_db,
+      $_db.trains,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_trainIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $HotelsTable _hotelIdTable(_$AppDatabase db) => db.hotels.createAlias(
+    $_aliasNameGenerator(db.itinerary.hotelId, db.hotels.id),
+  );
+
+  $$HotelsTableProcessedTableManager? get hotelId {
+    final $_column = $_itemColumn<int>('hotel_id');
+    if ($_column == null) return null;
+    final manager = $$HotelsTableTableManager(
+      $_db,
+      $_db.hotels,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_hotelIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ItineraryTableFilterComposer
+    extends Composer<_$AppDatabase, $ItineraryTable> {
+  $$ItineraryTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<double> get lat => $composableBuilder(
+    column: $table.lat,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get lng => $composableBuilder(
+    column: $table.lng,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get time => $composableBuilder(
+    column: $table.time,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get location => $composableBuilder(
+    column: $table.location,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get url => $composableBuilder(
+    column: $table.url,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get price => $composableBuilder(
+    column: $table.price,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get currency => $composableBuilder(
+    column: $table.currency,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get duration => $composableBuilder(
+    column: $table.duration,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get availability => $composableBuilder(
+    column: $table.availability,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get bookedAt => $composableBuilder(
+    column: $table.bookedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get image => $composableBuilder(
+    column: $table.image,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$CitiesTableFilterComposer get cityId {
+    final $$CitiesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.cityId,
+      referencedTable: $db.cities,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CitiesTableFilterComposer(
+            $db: $db,
+            $table: $db.cities,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$FlightsTableFilterComposer get flightId {
+    final $$FlightsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.flightId,
+      referencedTable: $db.flights,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$FlightsTableFilterComposer(
+            $db: $db,
+            $table: $db.flights,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$TrainsTableFilterComposer get trainId {
+    final $$TrainsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.trainId,
+      referencedTable: $db.trains,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TrainsTableFilterComposer(
+            $db: $db,
+            $table: $db.trains,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$HotelsTableFilterComposer get hotelId {
+    final $$HotelsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.hotelId,
+      referencedTable: $db.hotels,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$HotelsTableFilterComposer(
+            $db: $db,
+            $table: $db.hotels,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ItineraryTableOrderingComposer
+    extends Composer<_$AppDatabase, $ItineraryTable> {
+  $$ItineraryTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<double> get lat => $composableBuilder(
+    column: $table.lat,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get lng => $composableBuilder(
+    column: $table.lng,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get time => $composableBuilder(
+    column: $table.time,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get location => $composableBuilder(
+    column: $table.location,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get url => $composableBuilder(
+    column: $table.url,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get price => $composableBuilder(
+    column: $table.price,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get currency => $composableBuilder(
+    column: $table.currency,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get duration => $composableBuilder(
+    column: $table.duration,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get availability => $composableBuilder(
+    column: $table.availability,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get bookedAt => $composableBuilder(
+    column: $table.bookedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get image => $composableBuilder(
+    column: $table.image,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$CitiesTableOrderingComposer get cityId {
+    final $$CitiesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.cityId,
+      referencedTable: $db.cities,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CitiesTableOrderingComposer(
+            $db: $db,
+            $table: $db.cities,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$FlightsTableOrderingComposer get flightId {
+    final $$FlightsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.flightId,
+      referencedTable: $db.flights,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$FlightsTableOrderingComposer(
+            $db: $db,
+            $table: $db.flights,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$TrainsTableOrderingComposer get trainId {
+    final $$TrainsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.trainId,
+      referencedTable: $db.trains,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TrainsTableOrderingComposer(
+            $db: $db,
+            $table: $db.trains,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$HotelsTableOrderingComposer get hotelId {
+    final $$HotelsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.hotelId,
+      referencedTable: $db.hotels,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$HotelsTableOrderingComposer(
+            $db: $db,
+            $table: $db.hotels,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ItineraryTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ItineraryTable> {
+  $$ItineraryTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<double> get lat =>
+      $composableBuilder(column: $table.lat, builder: (column) => column);
+
+  GeneratedColumn<double> get lng =>
+      $composableBuilder(column: $table.lng, builder: (column) => column);
+
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get date =>
+      $composableBuilder(column: $table.date, builder: (column) => column);
+
+  GeneratedColumn<String> get time =>
+      $composableBuilder(column: $table.time, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<String> get location =>
+      $composableBuilder(column: $table.location, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<String> get url =>
+      $composableBuilder(column: $table.url, builder: (column) => column);
+
+  GeneratedColumn<double> get price =>
+      $composableBuilder(column: $table.price, builder: (column) => column);
+
+  GeneratedColumn<String> get currency =>
+      $composableBuilder(column: $table.currency, builder: (column) => column);
+
+  GeneratedColumn<int> get duration =>
+      $composableBuilder(column: $table.duration, builder: (column) => column);
+
+  GeneratedColumn<String> get availability => $composableBuilder(
+    column: $table.availability,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get bookedAt =>
+      $composableBuilder(column: $table.bookedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get image =>
+      $composableBuilder(column: $table.image, builder: (column) => column);
+
+  $$CitiesTableAnnotationComposer get cityId {
+    final $$CitiesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.cityId,
+      referencedTable: $db.cities,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CitiesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.cities,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$FlightsTableAnnotationComposer get flightId {
+    final $$FlightsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.flightId,
+      referencedTable: $db.flights,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$FlightsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.flights,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$TrainsTableAnnotationComposer get trainId {
+    final $$TrainsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.trainId,
+      referencedTable: $db.trains,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TrainsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.trains,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$HotelsTableAnnotationComposer get hotelId {
+    final $$HotelsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.hotelId,
+      referencedTable: $db.hotels,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$HotelsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.hotels,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ItineraryTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ItineraryTable,
+          ItineraryData,
+          $$ItineraryTableFilterComposer,
+          $$ItineraryTableOrderingComposer,
+          $$ItineraryTableAnnotationComposer,
+          $$ItineraryTableCreateCompanionBuilder,
+          $$ItineraryTableUpdateCompanionBuilder,
+          (ItineraryData, $$ItineraryTableReferences),
+          ItineraryData,
+          PrefetchHooks Function({
+            bool cityId,
+            bool flightId,
+            bool trainId,
+            bool hotelId,
+          })
+        > {
+  $$ItineraryTableTableManager(_$AppDatabase db, $ItineraryTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ItineraryTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ItineraryTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ItineraryTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> cityId = const Value.absent(),
+                Value<double?> lat = const Value.absent(),
+                Value<double?> lng = const Value.absent(),
+                Value<int> id = const Value.absent(),
+                Value<DateTime> date = const Value.absent(),
+                Value<String?> time = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String?> type = const Value.absent(),
+                Value<String?> location = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                Value<String?> url = const Value.absent(),
+                Value<double?> price = const Value.absent(),
+                Value<String?> currency = const Value.absent(),
+                Value<int?> duration = const Value.absent(),
+                Value<String?> availability = const Value.absent(),
+                Value<String?> status = const Value.absent(),
+                Value<DateTime?> bookedAt = const Value.absent(),
+                Value<int?> flightId = const Value.absent(),
+                Value<int?> trainId = const Value.absent(),
+                Value<int?> hotelId = const Value.absent(),
+                Value<String?> image = const Value.absent(),
+              }) => ItineraryCompanion(
+                cityId: cityId,
+                lat: lat,
+                lng: lng,
+                id: id,
+                date: date,
+                time: time,
+                title: title,
+                type: type,
+                location: location,
+                notes: notes,
+                url: url,
+                price: price,
+                currency: currency,
+                duration: duration,
+                availability: availability,
+                status: status,
+                bookedAt: bookedAt,
+                flightId: flightId,
+                trainId: trainId,
+                hotelId: hotelId,
+                image: image,
+              ),
+          createCompanionCallback:
+              ({
+                required int cityId,
+                Value<double?> lat = const Value.absent(),
+                Value<double?> lng = const Value.absent(),
+                Value<int> id = const Value.absent(),
+                required DateTime date,
+                Value<String?> time = const Value.absent(),
+                required String title,
+                Value<String?> type = const Value.absent(),
+                Value<String?> location = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                Value<String?> url = const Value.absent(),
+                Value<double?> price = const Value.absent(),
+                Value<String?> currency = const Value.absent(),
+                Value<int?> duration = const Value.absent(),
+                Value<String?> availability = const Value.absent(),
+                Value<String?> status = const Value.absent(),
+                Value<DateTime?> bookedAt = const Value.absent(),
+                Value<int?> flightId = const Value.absent(),
+                Value<int?> trainId = const Value.absent(),
+                Value<int?> hotelId = const Value.absent(),
+                Value<String?> image = const Value.absent(),
+              }) => ItineraryCompanion.insert(
+                cityId: cityId,
+                lat: lat,
+                lng: lng,
+                id: id,
+                date: date,
+                time: time,
+                title: title,
+                type: type,
+                location: location,
+                notes: notes,
+                url: url,
+                price: price,
+                currency: currency,
+                duration: duration,
+                availability: availability,
+                status: status,
+                bookedAt: bookedAt,
+                flightId: flightId,
+                trainId: trainId,
+                hotelId: hotelId,
+                image: image,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$ItineraryTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({
+                cityId = false,
+                flightId = false,
+                trainId = false,
+                hotelId = false,
+              }) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (cityId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.cityId,
+                                    referencedTable: $$ItineraryTableReferences
+                                        ._cityIdTable(db),
+                                    referencedColumn: $$ItineraryTableReferences
+                                        ._cityIdTable(db)
+                                        .id,
+                                  )
+                                  as T;
+                        }
+                        if (flightId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.flightId,
+                                    referencedTable: $$ItineraryTableReferences
+                                        ._flightIdTable(db),
+                                    referencedColumn: $$ItineraryTableReferences
+                                        ._flightIdTable(db)
+                                        .id,
+                                  )
+                                  as T;
+                        }
+                        if (trainId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.trainId,
+                                    referencedTable: $$ItineraryTableReferences
+                                        ._trainIdTable(db),
+                                    referencedColumn: $$ItineraryTableReferences
+                                        ._trainIdTable(db)
+                                        .id,
+                                  )
+                                  as T;
+                        }
+                        if (hotelId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.hotelId,
+                                    referencedTable: $$ItineraryTableReferences
+                                        ._hotelIdTable(db),
+                                    referencedColumn: $$ItineraryTableReferences
+                                        ._hotelIdTable(db)
+                                        .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$ItineraryTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ItineraryTable,
+      ItineraryData,
+      $$ItineraryTableFilterComposer,
+      $$ItineraryTableOrderingComposer,
+      $$ItineraryTableAnnotationComposer,
+      $$ItineraryTableCreateCompanionBuilder,
+      $$ItineraryTableUpdateCompanionBuilder,
+      (ItineraryData, $$ItineraryTableReferences),
+      ItineraryData,
+      PrefetchHooks Function({
+        bool cityId,
+        bool flightId,
+        bool trainId,
+        bool hotelId,
+      })
     >;
 typedef $$PackingItemsTableCreateCompanionBuilder =
     PackingItemsCompanion Function({
@@ -10941,6 +12999,637 @@ typedef $$TripTipsTableProcessedTableManager =
       TripTip,
       PrefetchHooks Function({bool tripId, bool cityId})
     >;
+typedef $$LocationsTableCreateCompanionBuilder =
+    LocationsCompanion Function({
+      required int tripId,
+      required int cityId,
+      Value<double?> lat,
+      Value<double?> lng,
+      Value<int> id,
+      required String name,
+      required String type,
+      Value<String?> category,
+      Value<String?> addressEn,
+      Value<String?> addressLocal,
+      Value<String?> mapUrl,
+      Value<String?> image,
+      Value<String?> notes,
+      Value<String?> phone,
+      Value<String?> website,
+      Value<String?> sourceTable,
+      Value<String?> sourceId,
+    });
+typedef $$LocationsTableUpdateCompanionBuilder =
+    LocationsCompanion Function({
+      Value<int> tripId,
+      Value<int> cityId,
+      Value<double?> lat,
+      Value<double?> lng,
+      Value<int> id,
+      Value<String> name,
+      Value<String> type,
+      Value<String?> category,
+      Value<String?> addressEn,
+      Value<String?> addressLocal,
+      Value<String?> mapUrl,
+      Value<String?> image,
+      Value<String?> notes,
+      Value<String?> phone,
+      Value<String?> website,
+      Value<String?> sourceTable,
+      Value<String?> sourceId,
+    });
+
+final class $$LocationsTableReferences
+    extends BaseReferences<_$AppDatabase, $LocationsTable, Location> {
+  $$LocationsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $TripsTable _tripIdTable(_$AppDatabase db) => db.trips.createAlias(
+    $_aliasNameGenerator(db.locations.tripId, db.trips.id),
+  );
+
+  $$TripsTableProcessedTableManager get tripId {
+    final $_column = $_itemColumn<int>('trip_id')!;
+
+    final manager = $$TripsTableTableManager(
+      $_db,
+      $_db.trips,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_tripIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $CitiesTable _cityIdTable(_$AppDatabase db) => db.cities.createAlias(
+    $_aliasNameGenerator(db.locations.cityId, db.cities.id),
+  );
+
+  $$CitiesTableProcessedTableManager get cityId {
+    final $_column = $_itemColumn<int>('city_id')!;
+
+    final manager = $$CitiesTableTableManager(
+      $_db,
+      $_db.cities,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_cityIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$LocationsTableFilterComposer
+    extends Composer<_$AppDatabase, $LocationsTable> {
+  $$LocationsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<double> get lat => $composableBuilder(
+    column: $table.lat,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get lng => $composableBuilder(
+    column: $table.lng,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get addressEn => $composableBuilder(
+    column: $table.addressEn,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get addressLocal => $composableBuilder(
+    column: $table.addressLocal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mapUrl => $composableBuilder(
+    column: $table.mapUrl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get image => $composableBuilder(
+    column: $table.image,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get phone => $composableBuilder(
+    column: $table.phone,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get website => $composableBuilder(
+    column: $table.website,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceTable => $composableBuilder(
+    column: $table.sourceTable,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceId => $composableBuilder(
+    column: $table.sourceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$TripsTableFilterComposer get tripId {
+    final $$TripsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableFilterComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$CitiesTableFilterComposer get cityId {
+    final $$CitiesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.cityId,
+      referencedTable: $db.cities,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CitiesTableFilterComposer(
+            $db: $db,
+            $table: $db.cities,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$LocationsTableOrderingComposer
+    extends Composer<_$AppDatabase, $LocationsTable> {
+  $$LocationsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<double> get lat => $composableBuilder(
+    column: $table.lat,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get lng => $composableBuilder(
+    column: $table.lng,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get addressEn => $composableBuilder(
+    column: $table.addressEn,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get addressLocal => $composableBuilder(
+    column: $table.addressLocal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get mapUrl => $composableBuilder(
+    column: $table.mapUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get image => $composableBuilder(
+    column: $table.image,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get phone => $composableBuilder(
+    column: $table.phone,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get website => $composableBuilder(
+    column: $table.website,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceTable => $composableBuilder(
+    column: $table.sourceTable,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceId => $composableBuilder(
+    column: $table.sourceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$TripsTableOrderingComposer get tripId {
+    final $$TripsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableOrderingComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$CitiesTableOrderingComposer get cityId {
+    final $$CitiesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.cityId,
+      referencedTable: $db.cities,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CitiesTableOrderingComposer(
+            $db: $db,
+            $table: $db.cities,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$LocationsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LocationsTable> {
+  $$LocationsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<double> get lat =>
+      $composableBuilder(column: $table.lat, builder: (column) => column);
+
+  GeneratedColumn<double> get lng =>
+      $composableBuilder(column: $table.lng, builder: (column) => column);
+
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<String> get category =>
+      $composableBuilder(column: $table.category, builder: (column) => column);
+
+  GeneratedColumn<String> get addressEn =>
+      $composableBuilder(column: $table.addressEn, builder: (column) => column);
+
+  GeneratedColumn<String> get addressLocal => $composableBuilder(
+    column: $table.addressLocal,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get mapUrl =>
+      $composableBuilder(column: $table.mapUrl, builder: (column) => column);
+
+  GeneratedColumn<String> get image =>
+      $composableBuilder(column: $table.image, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<String> get phone =>
+      $composableBuilder(column: $table.phone, builder: (column) => column);
+
+  GeneratedColumn<String> get website =>
+      $composableBuilder(column: $table.website, builder: (column) => column);
+
+  GeneratedColumn<String> get sourceTable => $composableBuilder(
+    column: $table.sourceTable,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sourceId =>
+      $composableBuilder(column: $table.sourceId, builder: (column) => column);
+
+  $$TripsTableAnnotationComposer get tripId {
+    final $$TripsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$CitiesTableAnnotationComposer get cityId {
+    final $$CitiesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.cityId,
+      referencedTable: $db.cities,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CitiesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.cities,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$LocationsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LocationsTable,
+          Location,
+          $$LocationsTableFilterComposer,
+          $$LocationsTableOrderingComposer,
+          $$LocationsTableAnnotationComposer,
+          $$LocationsTableCreateCompanionBuilder,
+          $$LocationsTableUpdateCompanionBuilder,
+          (Location, $$LocationsTableReferences),
+          Location,
+          PrefetchHooks Function({bool tripId, bool cityId})
+        > {
+  $$LocationsTableTableManager(_$AppDatabase db, $LocationsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocationsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocationsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocationsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> tripId = const Value.absent(),
+                Value<int> cityId = const Value.absent(),
+                Value<double?> lat = const Value.absent(),
+                Value<double?> lng = const Value.absent(),
+                Value<int> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> type = const Value.absent(),
+                Value<String?> category = const Value.absent(),
+                Value<String?> addressEn = const Value.absent(),
+                Value<String?> addressLocal = const Value.absent(),
+                Value<String?> mapUrl = const Value.absent(),
+                Value<String?> image = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                Value<String?> phone = const Value.absent(),
+                Value<String?> website = const Value.absent(),
+                Value<String?> sourceTable = const Value.absent(),
+                Value<String?> sourceId = const Value.absent(),
+              }) => LocationsCompanion(
+                tripId: tripId,
+                cityId: cityId,
+                lat: lat,
+                lng: lng,
+                id: id,
+                name: name,
+                type: type,
+                category: category,
+                addressEn: addressEn,
+                addressLocal: addressLocal,
+                mapUrl: mapUrl,
+                image: image,
+                notes: notes,
+                phone: phone,
+                website: website,
+                sourceTable: sourceTable,
+                sourceId: sourceId,
+              ),
+          createCompanionCallback:
+              ({
+                required int tripId,
+                required int cityId,
+                Value<double?> lat = const Value.absent(),
+                Value<double?> lng = const Value.absent(),
+                Value<int> id = const Value.absent(),
+                required String name,
+                required String type,
+                Value<String?> category = const Value.absent(),
+                Value<String?> addressEn = const Value.absent(),
+                Value<String?> addressLocal = const Value.absent(),
+                Value<String?> mapUrl = const Value.absent(),
+                Value<String?> image = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                Value<String?> phone = const Value.absent(),
+                Value<String?> website = const Value.absent(),
+                Value<String?> sourceTable = const Value.absent(),
+                Value<String?> sourceId = const Value.absent(),
+              }) => LocationsCompanion.insert(
+                tripId: tripId,
+                cityId: cityId,
+                lat: lat,
+                lng: lng,
+                id: id,
+                name: name,
+                type: type,
+                category: category,
+                addressEn: addressEn,
+                addressLocal: addressLocal,
+                mapUrl: mapUrl,
+                image: image,
+                notes: notes,
+                phone: phone,
+                website: website,
+                sourceTable: sourceTable,
+                sourceId: sourceId,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$LocationsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({tripId = false, cityId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (tripId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.tripId,
+                                referencedTable: $$LocationsTableReferences
+                                    ._tripIdTable(db),
+                                referencedColumn: $$LocationsTableReferences
+                                    ._tripIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+                    if (cityId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.cityId,
+                                referencedTable: $$LocationsTableReferences
+                                    ._cityIdTable(db),
+                                referencedColumn: $$LocationsTableReferences
+                                    ._cityIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$LocationsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LocationsTable,
+      Location,
+      $$LocationsTableFilterComposer,
+      $$LocationsTableOrderingComposer,
+      $$LocationsTableAnnotationComposer,
+      $$LocationsTableCreateCompanionBuilder,
+      $$LocationsTableUpdateCompanionBuilder,
+      (Location, $$LocationsTableReferences),
+      Location,
+      PrefetchHooks Function({bool tripId, bool cityId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -10953,14 +13642,16 @@ class $AppDatabaseManager {
       $$CitiesTableTableManager(_db, _db.cities);
   $$HotelsTableTableManager get hotels =>
       $$HotelsTableTableManager(_db, _db.hotels);
-  $$ActivitiesTableTableManager get activities =>
-      $$ActivitiesTableTableManager(_db, _db.activities);
   $$FlightsTableTableManager get flights =>
       $$FlightsTableTableManager(_db, _db.flights);
   $$TrainsTableTableManager get trains =>
       $$TrainsTableTableManager(_db, _db.trains);
+  $$ItineraryTableTableManager get itinerary =>
+      $$ItineraryTableTableManager(_db, _db.itinerary);
   $$PackingItemsTableTableManager get packingItems =>
       $$PackingItemsTableTableManager(_db, _db.packingItems);
   $$TripTipsTableTableManager get tripTips =>
       $$TripTipsTableTableManager(_db, _db.tripTips);
+  $$LocationsTableTableManager get locations =>
+      $$LocationsTableTableManager(_db, _db.locations);
 }
