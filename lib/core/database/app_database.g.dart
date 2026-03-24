@@ -4524,6 +4524,37 @@ class $ItineraryTable extends Itinerary
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _addressEnMeta = const VerificationMeta(
+    'addressEn',
+  );
+  @override
+  late final GeneratedColumn<String> addressEn = GeneratedColumn<String>(
+    'address_en',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _addressLocalMeta = const VerificationMeta(
+    'addressLocal',
+  );
+  @override
+  late final GeneratedColumn<String> addressLocal = GeneratedColumn<String>(
+    'address_local',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _mapUrlMeta = const VerificationMeta('mapUrl');
+  @override
+  late final GeneratedColumn<String> mapUrl = GeneratedColumn<String>(
+    'map_url',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _notesMeta = const VerificationMeta('notes');
   @override
   late final GeneratedColumn<String> notes = GeneratedColumn<String>(
@@ -4666,6 +4697,9 @@ class $ItineraryTable extends Itinerary
     title,
     type,
     location,
+    addressEn,
+    addressLocal,
+    mapUrl,
     notes,
     url,
     price,
@@ -4746,6 +4780,27 @@ class $ItineraryTable extends Itinerary
       context.handle(
         _locationMeta,
         location.isAcceptableOrUnknown(data['location']!, _locationMeta),
+      );
+    }
+    if (data.containsKey('address_en')) {
+      context.handle(
+        _addressEnMeta,
+        addressEn.isAcceptableOrUnknown(data['address_en']!, _addressEnMeta),
+      );
+    }
+    if (data.containsKey('address_local')) {
+      context.handle(
+        _addressLocalMeta,
+        addressLocal.isAcceptableOrUnknown(
+          data['address_local']!,
+          _addressLocalMeta,
+        ),
+      );
+    }
+    if (data.containsKey('map_url')) {
+      context.handle(
+        _mapUrlMeta,
+        mapUrl.isAcceptableOrUnknown(data['map_url']!, _mapUrlMeta),
       );
     }
     if (data.containsKey('notes')) {
@@ -4868,6 +4923,18 @@ class $ItineraryTable extends Itinerary
         DriftSqlType.string,
         data['${effectivePrefix}location'],
       ),
+      addressEn: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}address_en'],
+      ),
+      addressLocal: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}address_local'],
+      ),
+      mapUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}map_url'],
+      ),
       notes: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
@@ -4935,6 +5002,9 @@ class ItineraryData extends DataClass implements Insertable<ItineraryData> {
   final String title;
   final String? type;
   final String? location;
+  final String? addressEn;
+  final String? addressLocal;
+  final String? mapUrl;
   final String? notes;
   final String? url;
   final double? price;
@@ -4957,6 +5027,9 @@ class ItineraryData extends DataClass implements Insertable<ItineraryData> {
     required this.title,
     this.type,
     this.location,
+    this.addressEn,
+    this.addressLocal,
+    this.mapUrl,
     this.notes,
     this.url,
     this.price,
@@ -4991,6 +5064,15 @@ class ItineraryData extends DataClass implements Insertable<ItineraryData> {
     }
     if (!nullToAbsent || location != null) {
       map['location'] = Variable<String>(location);
+    }
+    if (!nullToAbsent || addressEn != null) {
+      map['address_en'] = Variable<String>(addressEn);
+    }
+    if (!nullToAbsent || addressLocal != null) {
+      map['address_local'] = Variable<String>(addressLocal);
+    }
+    if (!nullToAbsent || mapUrl != null) {
+      map['map_url'] = Variable<String>(mapUrl);
     }
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
@@ -5044,6 +5126,15 @@ class ItineraryData extends DataClass implements Insertable<ItineraryData> {
       location: location == null && nullToAbsent
           ? const Value.absent()
           : Value(location),
+      addressEn: addressEn == null && nullToAbsent
+          ? const Value.absent()
+          : Value(addressEn),
+      addressLocal: addressLocal == null && nullToAbsent
+          ? const Value.absent()
+          : Value(addressLocal),
+      mapUrl: mapUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mapUrl),
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
@@ -5096,6 +5187,9 @@ class ItineraryData extends DataClass implements Insertable<ItineraryData> {
       title: serializer.fromJson<String>(json['title']),
       type: serializer.fromJson<String?>(json['type']),
       location: serializer.fromJson<String?>(json['location']),
+      addressEn: serializer.fromJson<String?>(json['addressEn']),
+      addressLocal: serializer.fromJson<String?>(json['addressLocal']),
+      mapUrl: serializer.fromJson<String?>(json['mapUrl']),
       notes: serializer.fromJson<String?>(json['notes']),
       url: serializer.fromJson<String?>(json['url']),
       price: serializer.fromJson<double?>(json['price']),
@@ -5123,6 +5217,9 @@ class ItineraryData extends DataClass implements Insertable<ItineraryData> {
       'title': serializer.toJson<String>(title),
       'type': serializer.toJson<String?>(type),
       'location': serializer.toJson<String?>(location),
+      'addressEn': serializer.toJson<String?>(addressEn),
+      'addressLocal': serializer.toJson<String?>(addressLocal),
+      'mapUrl': serializer.toJson<String?>(mapUrl),
       'notes': serializer.toJson<String?>(notes),
       'url': serializer.toJson<String?>(url),
       'price': serializer.toJson<double?>(price),
@@ -5148,6 +5245,9 @@ class ItineraryData extends DataClass implements Insertable<ItineraryData> {
     String? title,
     Value<String?> type = const Value.absent(),
     Value<String?> location = const Value.absent(),
+    Value<String?> addressEn = const Value.absent(),
+    Value<String?> addressLocal = const Value.absent(),
+    Value<String?> mapUrl = const Value.absent(),
     Value<String?> notes = const Value.absent(),
     Value<String?> url = const Value.absent(),
     Value<double?> price = const Value.absent(),
@@ -5170,6 +5270,9 @@ class ItineraryData extends DataClass implements Insertable<ItineraryData> {
     title: title ?? this.title,
     type: type.present ? type.value : this.type,
     location: location.present ? location.value : this.location,
+    addressEn: addressEn.present ? addressEn.value : this.addressEn,
+    addressLocal: addressLocal.present ? addressLocal.value : this.addressLocal,
+    mapUrl: mapUrl.present ? mapUrl.value : this.mapUrl,
     notes: notes.present ? notes.value : this.notes,
     url: url.present ? url.value : this.url,
     price: price.present ? price.value : this.price,
@@ -5194,6 +5297,11 @@ class ItineraryData extends DataClass implements Insertable<ItineraryData> {
       title: data.title.present ? data.title.value : this.title,
       type: data.type.present ? data.type.value : this.type,
       location: data.location.present ? data.location.value : this.location,
+      addressEn: data.addressEn.present ? data.addressEn.value : this.addressEn,
+      addressLocal: data.addressLocal.present
+          ? data.addressLocal.value
+          : this.addressLocal,
+      mapUrl: data.mapUrl.present ? data.mapUrl.value : this.mapUrl,
       notes: data.notes.present ? data.notes.value : this.notes,
       url: data.url.present ? data.url.value : this.url,
       price: data.price.present ? data.price.value : this.price,
@@ -5223,6 +5331,9 @@ class ItineraryData extends DataClass implements Insertable<ItineraryData> {
           ..write('title: $title, ')
           ..write('type: $type, ')
           ..write('location: $location, ')
+          ..write('addressEn: $addressEn, ')
+          ..write('addressLocal: $addressLocal, ')
+          ..write('mapUrl: $mapUrl, ')
           ..write('notes: $notes, ')
           ..write('url: $url, ')
           ..write('price: $price, ')
@@ -5250,6 +5361,9 @@ class ItineraryData extends DataClass implements Insertable<ItineraryData> {
     title,
     type,
     location,
+    addressEn,
+    addressLocal,
+    mapUrl,
     notes,
     url,
     price,
@@ -5276,6 +5390,9 @@ class ItineraryData extends DataClass implements Insertable<ItineraryData> {
           other.title == this.title &&
           other.type == this.type &&
           other.location == this.location &&
+          other.addressEn == this.addressEn &&
+          other.addressLocal == this.addressLocal &&
+          other.mapUrl == this.mapUrl &&
           other.notes == this.notes &&
           other.url == this.url &&
           other.price == this.price &&
@@ -5300,6 +5417,9 @@ class ItineraryCompanion extends UpdateCompanion<ItineraryData> {
   final Value<String> title;
   final Value<String?> type;
   final Value<String?> location;
+  final Value<String?> addressEn;
+  final Value<String?> addressLocal;
+  final Value<String?> mapUrl;
   final Value<String?> notes;
   final Value<String?> url;
   final Value<double?> price;
@@ -5322,6 +5442,9 @@ class ItineraryCompanion extends UpdateCompanion<ItineraryData> {
     this.title = const Value.absent(),
     this.type = const Value.absent(),
     this.location = const Value.absent(),
+    this.addressEn = const Value.absent(),
+    this.addressLocal = const Value.absent(),
+    this.mapUrl = const Value.absent(),
     this.notes = const Value.absent(),
     this.url = const Value.absent(),
     this.price = const Value.absent(),
@@ -5345,6 +5468,9 @@ class ItineraryCompanion extends UpdateCompanion<ItineraryData> {
     required String title,
     this.type = const Value.absent(),
     this.location = const Value.absent(),
+    this.addressEn = const Value.absent(),
+    this.addressLocal = const Value.absent(),
+    this.mapUrl = const Value.absent(),
     this.notes = const Value.absent(),
     this.url = const Value.absent(),
     this.price = const Value.absent(),
@@ -5370,6 +5496,9 @@ class ItineraryCompanion extends UpdateCompanion<ItineraryData> {
     Expression<String>? title,
     Expression<String>? type,
     Expression<String>? location,
+    Expression<String>? addressEn,
+    Expression<String>? addressLocal,
+    Expression<String>? mapUrl,
     Expression<String>? notes,
     Expression<String>? url,
     Expression<double>? price,
@@ -5393,6 +5522,9 @@ class ItineraryCompanion extends UpdateCompanion<ItineraryData> {
       if (title != null) 'title': title,
       if (type != null) 'type': type,
       if (location != null) 'location': location,
+      if (addressEn != null) 'address_en': addressEn,
+      if (addressLocal != null) 'address_local': addressLocal,
+      if (mapUrl != null) 'map_url': mapUrl,
       if (notes != null) 'notes': notes,
       if (url != null) 'url': url,
       if (price != null) 'price': price,
@@ -5418,6 +5550,9 @@ class ItineraryCompanion extends UpdateCompanion<ItineraryData> {
     Value<String>? title,
     Value<String?>? type,
     Value<String?>? location,
+    Value<String?>? addressEn,
+    Value<String?>? addressLocal,
+    Value<String?>? mapUrl,
     Value<String?>? notes,
     Value<String?>? url,
     Value<double?>? price,
@@ -5441,6 +5576,9 @@ class ItineraryCompanion extends UpdateCompanion<ItineraryData> {
       title: title ?? this.title,
       type: type ?? this.type,
       location: location ?? this.location,
+      addressEn: addressEn ?? this.addressEn,
+      addressLocal: addressLocal ?? this.addressLocal,
+      mapUrl: mapUrl ?? this.mapUrl,
       notes: notes ?? this.notes,
       url: url ?? this.url,
       price: price ?? this.price,
@@ -5485,6 +5623,15 @@ class ItineraryCompanion extends UpdateCompanion<ItineraryData> {
     }
     if (location.present) {
       map['location'] = Variable<String>(location.value);
+    }
+    if (addressEn.present) {
+      map['address_en'] = Variable<String>(addressEn.value);
+    }
+    if (addressLocal.present) {
+      map['address_local'] = Variable<String>(addressLocal.value);
+    }
+    if (mapUrl.present) {
+      map['map_url'] = Variable<String>(mapUrl.value);
     }
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
@@ -5537,6 +5684,9 @@ class ItineraryCompanion extends UpdateCompanion<ItineraryData> {
           ..write('title: $title, ')
           ..write('type: $type, ')
           ..write('location: $location, ')
+          ..write('addressEn: $addressEn, ')
+          ..write('addressLocal: $addressLocal, ')
+          ..write('mapUrl: $mapUrl, ')
           ..write('notes: $notes, ')
           ..write('url: $url, ')
           ..write('price: $price, ')
@@ -11329,6 +11479,9 @@ typedef $$ItineraryTableCreateCompanionBuilder =
       required String title,
       Value<String?> type,
       Value<String?> location,
+      Value<String?> addressEn,
+      Value<String?> addressLocal,
+      Value<String?> mapUrl,
       Value<String?> notes,
       Value<String?> url,
       Value<double?> price,
@@ -11353,6 +11506,9 @@ typedef $$ItineraryTableUpdateCompanionBuilder =
       Value<String> title,
       Value<String?> type,
       Value<String?> location,
+      Value<String?> addressEn,
+      Value<String?> addressLocal,
+      Value<String?> mapUrl,
       Value<String?> notes,
       Value<String?> url,
       Value<double?> price,
@@ -11489,6 +11645,21 @@ class $$ItineraryTableFilterComposer
 
   ColumnFilters<String> get location => $composableBuilder(
     column: $table.location,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get addressEn => $composableBuilder(
+    column: $table.addressEn,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get addressLocal => $composableBuilder(
+    column: $table.addressLocal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mapUrl => $composableBuilder(
+    column: $table.mapUrl,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -11679,6 +11850,21 @@ class $$ItineraryTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get addressEn => $composableBuilder(
+    column: $table.addressEn,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get addressLocal => $composableBuilder(
+    column: $table.addressLocal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get mapUrl => $composableBuilder(
+    column: $table.mapUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get notes => $composableBuilder(
     column: $table.notes,
     builder: (column) => ColumnOrderings(column),
@@ -11850,6 +12036,17 @@ class $$ItineraryTableAnnotationComposer
   GeneratedColumn<String> get location =>
       $composableBuilder(column: $table.location, builder: (column) => column);
 
+  GeneratedColumn<String> get addressEn =>
+      $composableBuilder(column: $table.addressEn, builder: (column) => column);
+
+  GeneratedColumn<String> get addressLocal => $composableBuilder(
+    column: $table.addressLocal,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get mapUrl =>
+      $composableBuilder(column: $table.mapUrl, builder: (column) => column);
+
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
 
@@ -12014,6 +12211,9 @@ class $$ItineraryTableTableManager
                 Value<String> title = const Value.absent(),
                 Value<String?> type = const Value.absent(),
                 Value<String?> location = const Value.absent(),
+                Value<String?> addressEn = const Value.absent(),
+                Value<String?> addressLocal = const Value.absent(),
+                Value<String?> mapUrl = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<String?> url = const Value.absent(),
                 Value<double?> price = const Value.absent(),
@@ -12036,6 +12236,9 @@ class $$ItineraryTableTableManager
                 title: title,
                 type: type,
                 location: location,
+                addressEn: addressEn,
+                addressLocal: addressLocal,
+                mapUrl: mapUrl,
                 notes: notes,
                 url: url,
                 price: price,
@@ -12060,6 +12263,9 @@ class $$ItineraryTableTableManager
                 required String title,
                 Value<String?> type = const Value.absent(),
                 Value<String?> location = const Value.absent(),
+                Value<String?> addressEn = const Value.absent(),
+                Value<String?> addressLocal = const Value.absent(),
+                Value<String?> mapUrl = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<String?> url = const Value.absent(),
                 Value<double?> price = const Value.absent(),
@@ -12082,6 +12288,9 @@ class $$ItineraryTableTableManager
                 title: title,
                 type: type,
                 location: location,
+                addressEn: addressEn,
+                addressLocal: addressLocal,
+                mapUrl: mapUrl,
                 notes: notes,
                 url: url,
                 price: price,

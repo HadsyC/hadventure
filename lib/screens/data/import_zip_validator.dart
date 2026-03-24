@@ -1,12 +1,6 @@
-const Set<String> requiredZipTables = {
-  'trips',
-  'cities',
-  'flights',
-  'trains',
-  'hotels',
-  'itinerary',
-  'trip_tips',
-};
+import 'import_schema.dart' as schema;
+
+Set<String> get requiredZipTables => schema.requiredZipTables;
 
 Set<String> missingRequiredZipTables(Iterable<String> availableTables) {
   final available = availableTables.toSet();

@@ -87,6 +87,9 @@ class Itinerary extends Table with HasCityId, HasCoordinates {
   TextColumn get title => text()();
   TextColumn get type => text().nullable()();
   TextColumn get location => text().nullable()();
+  TextColumn get addressEn => text().nullable()();
+  TextColumn get addressLocal => text().nullable()();
+  TextColumn get mapUrl => text().nullable()();
   TextColumn get notes => text().nullable()();
   TextColumn get url => text().nullable()();
   RealColumn get price => real().nullable()();

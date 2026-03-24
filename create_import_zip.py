@@ -550,11 +550,55 @@ TRIP_TIPS_DATA = [
 
 def create_csv_content(headers, data_list):
     """Create CSV content from headers and data list."""
+    legacy_aliases = {
+        "address_local": ["address_local", "address_cn"],
+        "map_url": ["map_url", "amap_url"],
+    }
+
+    def resolve_field(row, header):
+        for key in legacy_aliases.get(header, [header]):
+            if key in row and row[key] is not None:
+                return row[key]
+        return ""
+
     output = StringIO()
-    writer = csv.DictWriter(output, fieldnames=headers)
+    writer = csv.DictWriter(output, fieldnames=headers, extrasaction="ignore")
     writer.writeheader()
-    writer.writerows(data_list)
+    normalized_rows = []
+    for row in data_list:
+        normalized_rows.append(
+            {header: resolve_field(row, header) for header in headers}
+        )
+    writer.writerows(normalized_rows)
     return output.getvalue()
+
+
+def enrich_itinerary_addresses(itinerary_rows, hotels_rows):
+    """Populate itinerary bilingual addresses and map url from matching city hotels."""
+    by_city = {h["city_name"].strip().lower(): h for h in hotels_rows}
+    enriched = []
+    for row in itinerary_rows:
+        out = dict(row)
+        city_key = row.get("city_name", "").strip().lower()
+        hotel = by_city.get(city_key)
+        out.setdefault("address_en", row.get("location", ""))
+        out.setdefault(
+            "address_local",
+            (
+                (hotel.get("address_local") or hotel.get("address_cn") or "")
+                if hotel
+                else ""
+            ),
+        )
+        out.setdefault(
+            "map_url",
+            (hotel.get("map_url") or hotel.get("amap_url") or "") if hotel else "",
+        )
+        enriched.append(out)
+    return enriched
+
+
+ENRICHED_ITINERARY_DATA = enrich_itinerary_addresses(ITINERARY_DATA, HOTELS_DATA)
 
 
 # Generate all CSV files
@@ -611,13 +655,13 @@ csv_files = {
             "check_in_time",
             "check_out_time",
             "address_en",
-            "address_cn",
+            "address_local",
             "phone",
             "website",
             "total_price",
             "price_pp",
             "price_pp_night",
-            "amap_url",
+            "map_url",
         ],
         HOTELS_DATA,
     ),
@@ -629,6 +673,9 @@ csv_files = {
             "title",
             "itinerary_type",
             "location",
+            "address_en",
+            "address_local",
+            "map_url",
             "notes",
             "url",
             "price",

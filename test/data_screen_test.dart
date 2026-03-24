@@ -5,7 +5,7 @@ import 'package:hadventure/core/database/database_provider.dart';
 import 'package:hadventure/screens/data/data_screen.dart';
 
 void main() {
-  group('DataScreen', () {
+  group('data screen', () {
     late AppDatabase testDb;
 
     setUp(() {
@@ -16,7 +16,7 @@ void main() {
       await testDb.close();
     });
 
-    testWidgets('Reset button clears imported data after confirmation', (
+    testWidgets('reset button clears imported data after confirmation', (
       WidgetTester tester,
     ) async {
       // Seed DB with minimal data so reset has something to delete.

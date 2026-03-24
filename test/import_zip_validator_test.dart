@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hadventure/screens/data/import_zip_validator.dart';
 
 void main() {
-  group('ZIP required tables validation', () {
+  group('zip required tables validation', () {
     test('fails when a required table is missing', () {
       final available = {
         'trips',

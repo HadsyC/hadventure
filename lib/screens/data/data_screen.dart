@@ -7,6 +7,7 @@ import 'package:archive/archive.dart';
 import '../../core/database/app_database.dart';
 import '../../core/database/database_provider.dart';
 import 'import_zip_validator.dart';
+import 'import_schema.dart' as import_schema;
 import 'package:drift/drift.dart' show Value;
 
 class _ImportPayload {
@@ -23,6 +24,18 @@ class _ImportPayload {
   });
 }
 
+class _ImportTableResult {
+  final int insertedRows;
+  final int rejectedRows;
+  final List<String> diagnostics;
+
+  const _ImportTableResult({
+    required this.insertedRows,
+    required this.rejectedRows,
+    required this.diagnostics,
+  });
+}
+
 class DataScreen extends StatefulWidget {
   const DataScreen({super.key});
 
@@ -35,12 +48,16 @@ class _DataScreenState extends State<DataScreen> {
   String? _lastMessage;
   bool _lastSuccess = false;
 
+  final Map<String, String> _aliasToCanonical = import_schema
+      .buildAliasToCanonical();
+
   static const _importOrder = [
     'trips',
     'cities',
     'flights',
     'trains',
     'hotels',
+    'locations',
     'itinerary',
     'trip_tips',
     'packing_items',
@@ -89,28 +106,24 @@ class _DataScreenState extends State<DataScreen> {
 
   // Detect table type from CSV headers
   String? _detectTable(List<String> headers) {
-    final h = headers.map((e) => e.trim().toLowerCase()).toSet();
-    if (h.contains('start_date') &&
-        h.contains('end_date') &&
-        h.contains('timezone'))
-      return 'trips';
-    if (h.contains('arrival_date') && h.contains('departure_date')) {
-      return 'cities';
+    final normalized = headers
+        .map(import_schema.normalizeImportHeader)
+        .map((h) => _aliasToCanonical[h] ?? h)
+        .toSet();
+
+    for (final entry in import_schema.tableDetectionColumns.entries) {
+      if (normalized.containsAll(entry.value)) {
+        return entry.key;
+      }
     }
-    if (h.contains('flight_number') && h.contains('airline')) return 'flights';
-    if (h.contains('train_number') && h.contains('departure')) return 'trains';
-    if (h.contains('address_en') && h.contains('check_in_date'))
-      return 'hotels';
-    if ((h.contains('activity_type') || h.contains('itinerary_type')) &&
-        h.contains('city_name')) {
+
+    // Backward compatibility for older itinerary exports.
+    if (normalized.contains('city_name') &&
+        (normalized.contains('activity_type') ||
+            normalized.contains('itinerary_type'))) {
       return 'itinerary';
     }
-    if (h.contains('category') &&
-        h.contains('content') &&
-        h.contains('language'))
-      return 'trip_tips';
-    if (h.contains('item') && h.contains('is_packed')) return 'packing_items';
-    if (h.contains('role') && h.contains('name')) return 'contacts';
+
     return null;
   }
 
@@ -223,19 +236,30 @@ class _DataScreenState extends State<DataScreen> {
 
     setState(() => _isImporting = true);
     try {
-      var totalRows = 0;
+      var totalInserted = 0;
+      var totalRejected = 0;
       var totalTables = 0;
+      final diagnostics = <String>[];
 
       for (final table in _importOrder) {
         final payload = byTable[table];
         if (payload == null) continue;
-        await _importTable(db, table, payload.headers, payload.dataRows);
-        totalRows += payload.dataRows.length;
+        final result = await _importTable(
+          db,
+          table,
+          payload.headers,
+          payload.dataRows,
+        );
+        totalInserted += result.insertedRows;
+        totalRejected += result.rejectedRows;
+        diagnostics.addAll(result.diagnostics);
         totalTables++;
       }
 
+      final diagnosticPreview = diagnostics.take(5).join(' | ');
       _setMessage(
-        'Successfully imported $totalRows rows across $totalTables tables from ZIP.',
+        'Imported $totalInserted rows across $totalTables tables. Rejected $totalRejected rows.'
+        '${diagnosticPreview.isEmpty ? '' : ' Details: $diagnosticPreview'}',
         true,
       );
     } catch (e) {
@@ -319,33 +343,39 @@ class _DataScreenState extends State<DataScreen> {
         ? normalized.substring(0, normalized.length - '_template'.length)
         : normalized;
 
-    const supported = {
-      'trips',
-      'cities',
-      'flights',
-      'trains',
-      'hotels',
-      'itinerary',
-      'activities',
-      'trip_tips',
-      'packing_items',
-      'contacts',
-    };
-
-    return supported.contains(root) ? root : null;
+    return import_schema.supportedImportTables.contains(root) ? root : null;
   }
 
-  Future<void> _importTable(
+  Future<_ImportTableResult> _importTable(
     AppDatabase db,
     String table,
     List<String> headers,
     List<List<dynamic>> rows,
   ) async {
+    final diagnostics = <String>[];
+    var insertedRows = 0;
+    var rejectedRows = 0;
+
     Map<String, dynamic> rowToMap(List<dynamic> row) {
       final map = <String, dynamic>{};
       for (int i = 0; i < headers.length; i++) {
-        map[headers[i].trim()] = i < row.length ? row[i] : null;
+        final normalized = import_schema.normalizeImportHeader(headers[i]);
+        final canonical = _aliasToCanonical[normalized] ?? normalized;
+        map[canonical] = i < row.length ? row[i] : null;
       }
+
+      // Resolve ambiguous IDs based on current table context.
+      if (table == 'flights' &&
+          map['flight_number'] == null &&
+          map['flight_id'] != null) {
+        map['flight_number'] = map['flight_id'];
+      }
+      if (table == 'trains' &&
+          map['train_number'] == null &&
+          map['train_id'] != null) {
+        map['train_number'] = map['train_id'];
+      }
+
       return map;
     }
 
@@ -358,9 +388,51 @@ class _DataScreenState extends State<DataScreen> {
     DateTime? dt(Map m, String k) {
       final v = str(m, k);
       if (v == null) return null;
+
+      DateTime? parseDMY(String input, String separator) {
+        final parts = input.split(separator);
+        if (parts.length != 3) return null;
+        final a = int.tryParse(parts[0]);
+        final b = int.tryParse(parts[1]);
+        final c = int.tryParse(parts[2]);
+        if (a == null || b == null || c == null) return null;
+        if (c < 1900) return null;
+        // Prefer day/month for Notion exports with dots, month/day for slash formats.
+        final monthFirst = separator == '/';
+        final day = monthFirst ? b : a;
+        final month = monthFirst ? a : b;
+        return DateTime.tryParse(
+          '${c.toString().padLeft(4, '0')}-${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}',
+        );
+      }
+
       try {
         return DateTime.parse(v);
       } catch (_) {
+        final cleaned = v.split('(').first.trim();
+        final normalized = cleaned.replaceAll('→', '-').replaceAll(',', '.');
+
+        final dateAndTime = RegExp(
+          r'^(\d{1,2})[\./](\d{1,2})[\./](\d{4})\s+(\d{1,2}):(\d{2})$',
+        ).firstMatch(normalized);
+        if (dateAndTime != null) {
+          final a = int.parse(dateAndTime.group(1)!);
+          final b = int.parse(dateAndTime.group(2)!);
+          final y = int.parse(dateAndTime.group(3)!);
+          final h = int.parse(dateAndTime.group(4)!);
+          final min = int.parse(dateAndTime.group(5)!);
+          final monthFirst = normalized.contains('/');
+          final day = monthFirst ? b : a;
+          final month = monthFirst ? a : b;
+          return DateTime(y, month, day, h, min);
+        }
+
+        if (normalized.contains('/')) {
+          return parseDMY(normalized, '/');
+        }
+        if (normalized.contains('.')) {
+          return parseDMY(normalized, '.');
+        }
         return null;
       }
     }
@@ -388,6 +460,13 @@ class _DataScreenState extends State<DataScreen> {
       return n.isEmpty ? null : n;
     }
 
+    String? canonicalCityName(String? value) {
+      final source = value?.trim();
+      if (source == null || source.isEmpty) return null;
+      final noLink = source.split('(').first.trim();
+      return noLink.isEmpty ? source : noLink;
+    }
+
     final allTrips = await db.select(db.trips).get();
 
     final allCities = await db.select(db.cities).get();
@@ -403,45 +482,68 @@ class _DataScreenState extends State<DataScreen> {
 
     int? resolveCityId(String? cityName) {
       final tripId = resolveTripId();
-      final cityKey = normalize(cityName);
+      final cityKey = normalize(canonicalCityName(cityName));
       if (tripId == null || cityKey == null) return null;
       return cityIdByTripAndName['$tripId|$cityKey'];
+    }
+
+    Future<void> rejectRow(String reason, int rowIndex) async {
+      rejectedRows++;
+      if (diagnostics.length < 20) {
+        diagnostics.add('$table row ${rowIndex + 1}: $reason');
+      }
     }
 
     await db.transaction(() async {
       switch (table) {
         case 'trips':
           await db.delete(db.trips).go();
-          for (final row in rows) {
+          for (var i = 0; i < rows.length; i++) {
+            final row = rows[i];
             final m = rowToMap(row);
+            if (str(m, 'name') == null ||
+                dt(m, 'start_date') == null ||
+                dt(m, 'end_date') == null) {
+              await rejectRow('Missing required trip fields', i);
+              continue;
+            }
             await db
                 .into(db.trips)
                 .insert(
                   TripsCompanion.insert(
-                    name: str(m, 'name') ?? '',
-                    startDate: dt(m, 'start_date') ?? DateTime.now(),
-                    endDate: dt(m, 'end_date') ?? DateTime.now(),
+                    name: str(m, 'name')!,
+                    startDate: dt(m, 'start_date')!,
+                    endDate: dt(m, 'end_date')!,
                     notes: Value(str(m, 'notes')),
                     currency: Value(str(m, 'currency')),
                     timezone: Value(str(m, 'timezone')),
                   ),
                 );
+            insertedRows++;
           }
           break;
 
         case 'cities':
           await db.delete(db.cities).go();
-          for (final row in rows) {
+          for (var i = 0; i < rows.length; i++) {
+            final row = rows[i];
             final m = rowToMap(row);
             final tripId = resolveTripId();
-            if (tripId == null) continue;
+            if (tripId == null) {
+              await rejectRow('No trip found for city row', i);
+              continue;
+            }
+            if (str(m, 'name') == null || str(m, 'country') == null) {
+              await rejectRow('Missing required city fields', i);
+              continue;
+            }
             await db
                 .into(db.cities)
                 .insert(
                   CitiesCompanion.insert(
                     tripId: tripId,
-                    name: str(m, 'name') ?? '',
-                    country: str(m, 'country') ?? '',
+                    name: str(m, 'name')!,
+                    country: str(m, 'country')!,
                     lat: Value(dbl(m, 'lat')),
                     lng: Value(dbl(m, 'lng')),
                     notes: Value(str(m, 'notes')),
@@ -449,25 +551,38 @@ class _DataScreenState extends State<DataScreen> {
                     departureDate: Value(dt(m, 'departure_date')),
                   ),
                 );
+            insertedRows++;
           }
           break;
 
         case 'flights':
           await db.delete(db.flights).go();
-          for (final row in rows) {
+          for (var i = 0; i < rows.length; i++) {
+            final row = rows[i];
             final m = rowToMap(row);
             final tripId = resolveTripId();
-            if (tripId == null) continue;
+            if (tripId == null) {
+              await rejectRow('No trip found for flight row', i);
+              continue;
+            }
+            if (str(m, 'flight_number') == null ||
+                str(m, 'origin') == null ||
+                str(m, 'destination') == null ||
+                dt(m, 'departure') == null ||
+                dt(m, 'arrival') == null) {
+              await rejectRow('Missing required flight fields', i);
+              continue;
+            }
             await db
                 .into(db.flights)
                 .insert(
                   FlightsCompanion.insert(
                     tripId: tripId,
-                    flightNumber: str(m, 'flight_number') ?? '',
-                    origin: str(m, 'origin') ?? '',
-                    destination: str(m, 'destination') ?? '',
-                    departure: dt(m, 'departure') ?? DateTime.now(),
-                    arrival: dt(m, 'arrival') ?? DateTime.now(),
+                    flightNumber: str(m, 'flight_number')!,
+                    origin: str(m, 'origin')!,
+                    destination: str(m, 'destination')!,
+                    departure: dt(m, 'departure')!,
+                    arrival: dt(m, 'arrival')!,
                     duration: Value(str(m, 'duration')),
                     airline: Value(str(m, 'airline')),
                     originTerminal: Value(str(m, 'origin_terminal')),
@@ -478,25 +593,38 @@ class _DataScreenState extends State<DataScreen> {
                     trackerUrl: Value(str(m, 'tracker_url')),
                   ),
                 );
+            insertedRows++;
           }
           break;
 
         case 'trains':
           await db.delete(db.trains).go();
-          for (final row in rows) {
+          for (var i = 0; i < rows.length; i++) {
+            final row = rows[i];
             final m = rowToMap(row);
             final tripId = resolveTripId();
-            if (tripId == null) continue;
+            if (tripId == null) {
+              await rejectRow('No trip found for train row', i);
+              continue;
+            }
+            if (str(m, 'train_number') == null ||
+                str(m, 'origin') == null ||
+                str(m, 'destination') == null ||
+                dt(m, 'departure') == null ||
+                dt(m, 'arrival') == null) {
+              await rejectRow('Missing required train fields', i);
+              continue;
+            }
             await db
                 .into(db.trains)
                 .insert(
                   TrainsCompanion.insert(
                     tripId: tripId,
-                    trainNumber: str(m, 'train_number') ?? '',
-                    origin: str(m, 'origin') ?? '',
-                    destination: str(m, 'destination') ?? '',
-                    departure: dt(m, 'departure') ?? DateTime.now(),
-                    arrival: dt(m, 'arrival') ?? DateTime.now(),
+                    trainNumber: str(m, 'train_number')!,
+                    origin: str(m, 'origin')!,
+                    destination: str(m, 'destination')!,
+                    departure: dt(m, 'departure')!,
+                    arrival: dt(m, 'arrival')!,
                     duration: Value(str(m, 'duration')),
                     platform: Value(str(m, 'platform')),
                     seat: Value(str(m, 'seat')),
@@ -507,24 +635,33 @@ class _DataScreenState extends State<DataScreen> {
                     status: Value(str(m, 'status')),
                   ),
                 );
+            insertedRows++;
           }
           break;
 
         case 'hotels':
           await db.delete(db.hotels).go();
-          for (final row in rows) {
+          for (var i = 0; i < rows.length; i++) {
+            final row = rows[i];
             final m = rowToMap(row);
             final cityId = resolveCityId(str(m, 'city_name'));
-            if (cityId == null) continue;
+            if (cityId == null) {
+              await rejectRow('Could not resolve city_name for hotel row', i);
+              continue;
+            }
+            if (str(m, 'name') == null) {
+              await rejectRow('Missing hotel name', i);
+              continue;
+            }
             await db
                 .into(db.hotels)
                 .insert(
                   HotelsCompanion.insert(
                     cityId: cityId,
-                    name: str(m, 'name') ?? '',
+                    name: str(m, 'name')!,
                     localName: Value(str(m, 'local_name')),
                     addressEn: Value(str(m, 'address_en')),
-                    addressLocal: Value(str(m, 'address_cn')),
+                    addressLocal: Value(str(m, 'address_local')),
                     checkIn: Value(dt(m, 'check_in_date')),
                     checkOut: Value(dt(m, 'check_out_date')),
                     checkInTime: Value(str(m, 'check_in_time')),
@@ -535,31 +672,102 @@ class _DataScreenState extends State<DataScreen> {
                     totalPrice: Value(dbl(m, 'total_price')),
                     pricePerPerson: Value(dbl(m, 'price_pp')),
                     pricePerPersonNight: Value(dbl(m, 'price_pp_night')),
-                    mapUrl: Value(str(m, 'amap_url')),
+                    mapUrl: Value(str(m, 'map_url')),
                   ),
                 );
+            insertedRows++;
+          }
+          break;
+
+        case 'locations':
+          await db.delete(db.locations).go();
+          for (var i = 0; i < rows.length; i++) {
+            final row = rows[i];
+            final m = rowToMap(row);
+            final tripId = resolveTripId();
+            final cityId = resolveCityId(str(m, 'city_name'));
+            if (tripId == null || cityId == null) {
+              await rejectRow(
+                'Could not resolve trip or city for location row',
+                i,
+              );
+              continue;
+            }
+            if (str(m, 'name') == null || str(m, 'type') == null) {
+              await rejectRow('Missing required location fields', i);
+              continue;
+            }
+
+            await db
+                .into(db.locations)
+                .insert(
+                  LocationsCompanion.insert(
+                    tripId: tripId,
+                    cityId: cityId,
+                    name: str(m, 'name')!,
+                    type: str(m, 'type')!,
+                    category: Value(str(m, 'category')),
+                    addressEn: Value(str(m, 'address_en')),
+                    addressLocal: Value(str(m, 'address_local')),
+                    mapUrl: Value(str(m, 'map_url')),
+                    lat: Value(dbl(m, 'lat')),
+                    lng: Value(dbl(m, 'lng')),
+                    image: Value(str(m, 'image')),
+                    notes: Value(str(m, 'notes')),
+                    phone: Value(str(m, 'phone')),
+                    website: Value(str(m, 'website')),
+                    sourceTable: Value(str(m, 'source_table')),
+                    sourceId: Value(str(m, 'source_id')),
+                  ),
+                );
+            insertedRows++;
           }
           break;
 
         case 'itinerary':
         case 'activities':
           await db.delete(db.itinerary).go();
-          for (final row in rows) {
+          for (var i = 0; i < rows.length; i++) {
+            final row = rows[i];
             final m = rowToMap(row);
             final cityId = resolveCityId(str(m, 'city_name'));
-            if (cityId == null) continue;
+            if (cityId == null) {
+              await rejectRow(
+                'Could not resolve city_name for itinerary row',
+                i,
+              );
+              continue;
+            }
+            if (str(m, 'title') == null || dt(m, 'date') == null) {
+              await rejectRow('Missing itinerary title or date', i);
+              continue;
+            }
+
+            final addressEn = str(m, 'address_en') ?? str(m, 'location');
+            final addressLocal = str(m, 'address_local');
+            if (addressEn == null || addressLocal == null) {
+              await rejectRow(
+                'Map-ready itinerary row requires address_en and address_local',
+                i,
+              );
+              continue;
+            }
+
             await db
                 .into(db.itinerary)
                 .insert(
                   ItineraryCompanion.insert(
                     cityId: cityId,
-                    date: dt(m, 'date') ?? DateTime.now(),
-                    title: str(m, 'title') ?? '',
+                    date: dt(m, 'date')!,
+                    title: str(m, 'title')!,
                     time: Value(str(m, 'time')),
                     type: Value(
                       str(m, 'itinerary_type') ?? str(m, 'activity_type'),
                     ),
                     location: Value(str(m, 'location')),
+                    addressEn: Value(addressEn),
+                    addressLocal: Value(addressLocal),
+                    mapUrl: Value(str(m, 'map_url')),
                     lat: Value(dbl(m, 'lat')),
                     lng: Value(dbl(m, 'lng')),
                     notes: Value(str(m, 'notes')),
@@ -574,15 +782,26 @@ class _DataScreenState extends State<DataScreen> {
                     hotelId: Value(intVal(m, 'hotel_id')),
                   ),
                 );
+            insertedRows++;
           }
           break;
 
         case 'trip_tips':
           await db.delete(db.tripTips).go();
-          for (final row in rows) {
+          for (var i = 0; i < rows.length; i++) {
+            final row = rows[i];
             final m = rowToMap(row);
             final tripId = resolveTripId();
-            if (tripId == null) continue;
+            if (tripId == null) {
+              await rejectRow('No trip found for tip row', i);
+              continue;
+            }
+            if (str(m, 'category') == null ||
+                str(m, 'title') == null ||
+                str(m, 'content') == null) {
+              await rejectRow('Missing required tip fields', i);
+              continue;
+            }
             final cityId = resolveCityId(str(m, 'city_name'));
             await db
                 .into(db.tripTips)
@@ -590,58 +809,83 @@ class _DataScreenState extends State<DataScreen> {
                   TripTipsCompanion.insert(
                     tripId: tripId,
                     cityId: Value(cityId),
-                    category: str(m, 'category') ?? '',
-                    title: str(m, 'title') ?? '',
-                    content: str(m, 'content') ?? '',
+                    category: str(m, 'category')!,
+                    title: str(m, 'title')!,
+                    content: str(m, 'content')!,
                     language: Value(str(m, 'language')),
                   ),
                 );
+            insertedRows++;
           }
           break;
 
         case 'packing_items':
           await db.delete(db.packingItems).go();
-          for (final row in rows) {
+          for (var i = 0; i < rows.length; i++) {
+            final row = rows[i];
             final m = rowToMap(row);
             final tripId = resolveTripId();
-            if (tripId == null) continue;
+            if (tripId == null) {
+              await rejectRow('No trip found for packing row', i);
+              continue;
+            }
+            if (str(m, 'item') == null) {
+              await rejectRow('Missing packing item name', i);
+              continue;
+            }
             await db
                 .into(db.packingItems)
                 .insert(
                   PackingItemsCompanion.insert(
                     tripId: tripId,
-                    item: str(m, 'item') ?? '',
+                    item: str(m, 'item')!,
                     category: Value(str(m, 'category')),
                     quantity: Value(intVal(m, 'quantity') ?? 1),
                     isPacked: Value(boolVal(m, 'is_packed')),
                     notes: Value(str(m, 'notes')),
                   ),
                 );
+            insertedRows++;
           }
           break;
 
         case 'contacts':
           await db.delete(db.contacts).go();
-          for (final row in rows) {
+          for (var i = 0; i < rows.length; i++) {
+            final row = rows[i];
             final m = rowToMap(row);
             final tripId = resolveTripId();
-            if (tripId == null) continue;
+            if (tripId == null) {
+              await rejectRow('No trip found for contact row', i);
+              continue;
+            }
+            if (str(m, 'name') == null) {
+              await rejectRow('Missing contact name', i);
+              continue;
+            }
             await db
                 .into(db.contacts)
                 .insert(
                   ContactsCompanion.insert(
                     tripId: tripId,
-                    name: str(m, 'name') ?? '',
+                    name: str(m, 'name')!,
                     role: Value(str(m, 'role')),
                     phone: Value(str(m, 'phone')),
                     email: Value(str(m, 'email')),
                     notes: Value(str(m, 'notes')),
                   ),
                 );
+            insertedRows++;
           }
           break;
       }
     });
+
+    return _ImportTableResult(
+      insertedRows: insertedRows,
+      rejectedRows: rejectedRows,
+      diagnostics: diagnostics,
+    );
   }
 
   void _setMessage(String msg, bool success) {
@@ -672,6 +916,7 @@ class _DataScreenState extends State<DataScreen> {
       (name: 'flights', icon: Icons.flight_outlined, label: 'Flights'),
       (name: 'trains', icon: Icons.train_outlined, label: 'Trains'),
       (name: 'hotels', icon: Icons.hotel_outlined, label: 'Hotels'),
+      (name: 'locations', icon: Icons.place_outlined, label: 'Locations'),
       (
         name: 'itinerary',
         icon: Icons.local_activity_outlined,
@@ -842,6 +1087,7 @@ class _ZipImportPreviewDialog extends StatelessWidget {
       'flights',
       'trains',
       'hotels',
+      'locations',
       'itinerary',
       'trip_tips',
       'packing_items',
