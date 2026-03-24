@@ -3,18 +3,18 @@ import 'package:drift/drift.dart' show Value;
 import '../../core/database/app_database.dart';
 import '../../core/database/database_provider.dart';
 
-class FlightsScreen extends StatefulWidget {
-  final int? highlightedFlightId;
+class TrainsScreen extends StatefulWidget {
+  final int? highlightedTrainId;
 
-  const FlightsScreen({super.key, this.highlightedFlightId});
+  const TrainsScreen({super.key, this.highlightedTrainId});
 
   @override
-  State<FlightsScreen> createState() => _FlightsScreenState();
+  State<TrainsScreen> createState() => _TrainsScreenState();
 }
 
-class _FlightsScreenState extends State<FlightsScreen> {
+class _TrainsScreenState extends State<TrainsScreen> {
   bool _loading = true;
-  List<Flight> _flights = [];
+  List<Train> _trains = [];
 
   @override
   void didChangeDependencies() {
@@ -28,26 +28,25 @@ class _FlightsScreenState extends State<FlightsScreen> {
     final trip = await db.currentTrip;
     if (trip == null) {
       setState(() {
-        _flights = [];
+        _trains = [];
         _loading = false;
       });
       return;
     }
 
-    final flights = await (db.select(
-      db.flights,
-    )..where((f) => f.tripId.equals(trip.id))).get();
-
-    flights.sort((a, b) => a.departure.compareTo(b.departure));
+    final trains = await (db.select(
+      db.trains,
+    )..where((t) => t.tripId.equals(trip.id))).get();
+    trains.sort((a, b) => a.departure.compareTo(b.departure));
 
     if (!mounted) return;
     setState(() {
-      _flights = flights;
+      _trains = trains;
       _loading = false;
     });
   }
 
-  void _openBottomSheet({Flight? flight}) {
+  void _openBottomSheet({Train? train}) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -55,11 +54,11 @@ class _FlightsScreenState extends State<FlightsScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => _FlightForm(flight: flight, onSaved: _load),
+      builder: (_) => _TrainForm(train: train, onSaved: _load),
     );
   }
 
-  void _openViewSheet(Flight flight) {
+  void _openViewSheet(Train train) {
     final theme = Theme.of(context);
     showModalBottomSheet(
       context: context,
@@ -79,7 +78,7 @@ class _FlightsScreenState extends State<FlightsScreen> {
                 children: [
                   Expanded(
                     child: Text(
-                      '${flight.flightNumber} ${flight.airline == null ? '' : '· ${flight.airline}'}',
+                      train.trainNumber,
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -90,24 +89,26 @@ class _FlightsScreenState extends State<FlightsScreen> {
                     icon: const Icon(Icons.edit_outlined),
                     onPressed: () {
                       Navigator.pop(context);
-                      _openBottomSheet(flight: flight);
+                      _openBottomSheet(train: train);
                     },
                   ),
                 ],
               ),
               const SizedBox(height: 10),
-              Text('${flight.origin} -> ${flight.destination}'),
+              Text('${train.origin} -> ${train.destination}'),
               const SizedBox(height: 6),
-              Text('Departure: ${_fmt(flight.departure)}'),
-              Text('Arrival: ${_fmt(flight.arrival)}'),
-              if (flight.originTerminal?.isNotEmpty == true)
-                Text('Origin terminal: ${flight.originTerminal}'),
-              if (flight.destinationTerminal?.isNotEmpty == true)
-                Text('Destination terminal: ${flight.destinationTerminal}'),
-              if (flight.duration?.isNotEmpty == true)
-                Text('Duration: ${flight.duration}'),
-              if (flight.trackerUrl?.isNotEmpty == true)
-                Text('Tracker: ${flight.trackerUrl}'),
+              Text('Departure: ${_fmt(train.departure)}'),
+              Text('Arrival: ${_fmt(train.arrival)}'),
+              if (train.platform?.isNotEmpty == true)
+                Text('Platform: ${train.platform}'),
+              if (train.duration?.isNotEmpty == true)
+                Text('Duration: ${train.duration}'),
+              if (train.ticketPricePerPerson != null)
+                Text('Ticket p.p.: ${train.ticketPricePerPerson}'),
+              if (train.bookingFeePerPerson != null)
+                Text('Booking fee p.p.: ${train.bookingFeePerPerson}'),
+              if (train.totalPricePerPerson != null)
+                Text('Total p.p.: ${train.totalPricePerPerson}'),
             ],
           ),
         ),
@@ -115,12 +116,12 @@ class _FlightsScreenState extends State<FlightsScreen> {
     );
   }
 
-  Future<void> _deleteFlight(Flight flight) async {
+  Future<void> _deleteTrain(Train train) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Delete flight?'),
-        content: Text('This will permanently delete "${flight.flightNumber}".'),
+        title: const Text('Delete train?'),
+        content: Text('This will permanently delete "${train.trainNumber}".'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -138,7 +139,7 @@ class _FlightsScreenState extends State<FlightsScreen> {
     );
     if (confirmed == true && mounted) {
       final db = DatabaseProvider.of(context);
-      await (db.delete(db.flights)..where((f) => f.id.equals(flight.id))).go();
+      await (db.delete(db.trains)..where((t) => t.id.equals(train.id))).go();
       _load();
     }
   }
@@ -151,7 +152,7 @@ class _FlightsScreenState extends State<FlightsScreen> {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          const SliverAppBar.large(title: Text('Flights')),
+          const SliverAppBar.large(title: Text('Trains')),
           if (_loading)
             const SliverFillRemaining(
               child: Center(child: CircularProgressIndicator()),
@@ -161,25 +162,23 @@ class _FlightsScreenState extends State<FlightsScreen> {
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  if (_flights.isEmpty)
+                  if (_trains.isEmpty)
                     const Card(
                       child: ListTile(
-                        title: Text('No flights for current trip.'),
+                        title: Text('No trains for current trip.'),
                       ),
                     )
                   else
-                    ..._flights.map(
-                      (f) => Card(
-                        color: widget.highlightedFlightId == f.id
+                    ..._trains.map(
+                      (t) => Card(
+                        color: widget.highlightedTrainId == t.id
                             ? colorScheme.primaryContainer
                             : null,
                         child: ListTile(
-                          leading: const Icon(Icons.flight_outlined),
-                          title: Text(
-                            '${f.flightNumber} · ${f.airline ?? 'Airline'}',
-                          ),
+                          leading: const Icon(Icons.train_outlined),
+                          title: Text(t.trainNumber),
                           subtitle: Text(
-                            '${f.origin} -> ${f.destination}\n${_fmt(f.departure)} - ${_fmt(f.arrival)}',
+                            '${t.origin} -> ${t.destination}\n${_fmt(t.departure)} - ${_fmt(t.arrival)}',
                           ),
                           isThreeLine: true,
                           trailing: Row(
@@ -191,12 +190,12 @@ class _FlightsScreenState extends State<FlightsScreen> {
                                   size: 18,
                                 ),
                                 tooltip: 'View',
-                                onPressed: () => _openViewSheet(f),
+                                onPressed: () => _openViewSheet(t),
                               ),
                               IconButton(
                                 icon: const Icon(Icons.edit_outlined, size: 18),
                                 tooltip: 'Edit',
-                                onPressed: () => _openBottomSheet(flight: f),
+                                onPressed: () => _openBottomSheet(train: t),
                               ),
                               IconButton(
                                 icon: Icon(
@@ -205,11 +204,11 @@ class _FlightsScreenState extends State<FlightsScreen> {
                                   color: colorScheme.error,
                                 ),
                                 tooltip: 'Delete',
-                                onPressed: () => _deleteFlight(f),
+                                onPressed: () => _deleteTrain(t),
                               ),
                             ],
                           ),
-                          onTap: () => _openViewSheet(f),
+                          onTap: () => _openViewSheet(t),
                         ),
                       ),
                     ),
@@ -221,7 +220,7 @@ class _FlightsScreenState extends State<FlightsScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openBottomSheet(),
         icon: const Icon(Icons.add),
-        label: const Text('Add flight'),
+        label: const Text('Add train'),
       ),
     );
   }
@@ -236,56 +235,60 @@ class _FlightsScreenState extends State<FlightsScreen> {
   }
 }
 
-class _FlightForm extends StatefulWidget {
-  final Flight? flight;
+class _TrainForm extends StatefulWidget {
+  final Train? train;
   final VoidCallback onSaved;
 
-  const _FlightForm({this.flight, required this.onSaved});
+  const _TrainForm({this.train, required this.onSaved});
 
   @override
-  State<_FlightForm> createState() => _FlightFormState();
+  State<_TrainForm> createState() => _TrainFormState();
 }
 
-class _FlightFormState extends State<_FlightForm> {
-  late TextEditingController _flightNumber;
-  late TextEditingController _airline;
+class _TrainFormState extends State<_TrainForm> {
+  late TextEditingController _trainNumber;
   late TextEditingController _origin;
   late TextEditingController _destination;
-  late TextEditingController _originTerminal;
-  late TextEditingController _destinationTerminal;
+  late TextEditingController _platform;
   late TextEditingController _duration;
-  late TextEditingController _trackerUrl;
+  late TextEditingController _ticketPrice;
+  late TextEditingController _bookingFee;
+  late TextEditingController _totalPrice;
   DateTime? _departure;
   DateTime? _arrival;
 
   @override
   void initState() {
     super.initState();
-    final f = widget.flight;
-    _flightNumber = TextEditingController(text: f?.flightNumber ?? '');
-    _airline = TextEditingController(text: f?.airline ?? '');
-    _origin = TextEditingController(text: f?.origin ?? '');
-    _destination = TextEditingController(text: f?.destination ?? '');
-    _originTerminal = TextEditingController(text: f?.originTerminal ?? '');
-    _destinationTerminal = TextEditingController(
-      text: f?.destinationTerminal ?? '',
+    final t = widget.train;
+    _trainNumber = TextEditingController(text: t?.trainNumber ?? '');
+    _origin = TextEditingController(text: t?.origin ?? '');
+    _destination = TextEditingController(text: t?.destination ?? '');
+    _platform = TextEditingController(text: t?.platform ?? '');
+    _duration = TextEditingController(text: t?.duration ?? '');
+    _ticketPrice = TextEditingController(
+      text: t?.ticketPricePerPerson?.toString() ?? '',
     );
-    _duration = TextEditingController(text: f?.duration ?? '');
-    _trackerUrl = TextEditingController(text: f?.trackerUrl ?? '');
-    _departure = f?.departure;
-    _arrival = f?.arrival;
+    _bookingFee = TextEditingController(
+      text: t?.bookingFeePerPerson?.toString() ?? '',
+    );
+    _totalPrice = TextEditingController(
+      text: t?.totalPricePerPerson?.toString() ?? '',
+    );
+    _departure = t?.departure;
+    _arrival = t?.arrival;
   }
 
   @override
   void dispose() {
-    _flightNumber.dispose();
-    _airline.dispose();
+    _trainNumber.dispose();
     _origin.dispose();
     _destination.dispose();
-    _originTerminal.dispose();
-    _destinationTerminal.dispose();
+    _platform.dispose();
     _duration.dispose();
-    _trackerUrl.dispose();
+    _ticketPrice.dispose();
+    _bookingFee.dispose();
+    _totalPrice.dispose();
     super.dispose();
   }
 
@@ -321,7 +324,7 @@ class _FlightFormState extends State<_FlightForm> {
   }
 
   Future<void> _save() async {
-    if (_flightNumber.text.trim().isEmpty ||
+    if (_trainNumber.text.trim().isEmpty ||
         _origin.text.trim().isEmpty ||
         _destination.text.trim().isEmpty ||
         _departure == null ||
@@ -333,40 +336,26 @@ class _FlightFormState extends State<_FlightForm> {
     final trip = await db.currentTrip;
     if (trip == null) return;
 
-    final companion = FlightsCompanion(
+    final companion = TrainsCompanion(
       tripId: Value(trip.id),
-      flightNumber: Value(_flightNumber.text.trim()),
-      airline: Value(
-        _airline.text.trim().isEmpty ? null : _airline.text.trim(),
-      ),
+      trainNumber: Value(_trainNumber.text.trim()),
       origin: Value(_origin.text.trim()),
       destination: Value(_destination.text.trim()),
-      originTerminal: Value(
-        _originTerminal.text.trim().isEmpty
-            ? null
-            : _originTerminal.text.trim(),
-      ),
-      destinationTerminal: Value(
-        _destinationTerminal.text.trim().isEmpty
-            ? null
-            : _destinationTerminal.text.trim(),
-      ),
       departure: Value(_departure!),
       arrival: Value(_arrival!),
-      duration: Value(
-        _duration.text.trim().isEmpty ? null : _duration.text.trim(),
-      ),
-      trackerUrl: Value(
-        _trackerUrl.text.trim().isEmpty ? null : _trackerUrl.text.trim(),
-      ),
+      platform: Value(_platform.text.trim().isEmpty ? null : _platform.text.trim()),
+      duration: Value(_duration.text.trim().isEmpty ? null : _duration.text.trim()),
+      ticketPricePerPerson: Value(double.tryParse(_ticketPrice.text.trim())),
+      bookingFeePerPerson: Value(double.tryParse(_bookingFee.text.trim())),
+      totalPricePerPerson: Value(double.tryParse(_totalPrice.text.trim())),
     );
 
-    if (widget.flight == null) {
-      await db.into(db.flights).insert(companion);
+    if (widget.train == null) {
+      await db.into(db.trains).insert(companion);
     } else {
       await (db.update(
-        db.flights,
-      )..where((f) => f.id.equals(widget.flight!.id))).write(companion);
+        db.trains,
+      )..where((t) => t.id.equals(widget.train!.id))).write(companion);
     }
 
     if (!mounted) return;
@@ -376,7 +365,7 @@ class _FlightFormState extends State<_FlightForm> {
 
   @override
   Widget build(BuildContext context) {
-    final isEdit = widget.flight != null;
+    final isEdit = widget.train != null;
     final theme = Theme.of(context);
 
     return Padding(
@@ -392,34 +381,18 @@ class _FlightFormState extends State<_FlightForm> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              isEdit ? 'Edit flight' : 'New flight',
+              isEdit ? 'Edit train' : 'New train',
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _flightNumber,
-                    decoration: const InputDecoration(
-                      labelText: 'Flight number *',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    controller: _airline,
-                    decoration: const InputDecoration(
-                      labelText: 'Airline',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-              ],
+            TextField(
+              controller: _trainNumber,
+              decoration: const InputDecoration(
+                labelText: 'Train number *',
+                border: OutlineInputBorder(),
+              ),
             ),
             const SizedBox(height: 12),
             Row(
@@ -449,35 +422,13 @@ class _FlightFormState extends State<_FlightForm> {
             Row(
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: _originTerminal,
-                    decoration: const InputDecoration(
-                      labelText: 'Origin terminal',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    controller: _destinationTerminal,
-                    decoration: const InputDecoration(
-                      labelText: 'Destination terminal',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () => _pickDateTime(isDeparture: true),
-                    icon: const Icon(Icons.flight_takeoff_outlined),
+                    icon: const Icon(Icons.departure_board_outlined),
                     label: Text(
-                      _departure == null ? 'Departure *' : _fmt(_departure!),
+                      _departure == null
+                          ? 'Departure *'
+                          : _fmt(_departure!),
                     ),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(50),
@@ -488,10 +439,8 @@ class _FlightFormState extends State<_FlightForm> {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () => _pickDateTime(isDeparture: false),
-                    icon: const Icon(Icons.flight_land_outlined),
-                    label: Text(
-                      _arrival == null ? 'Arrival *' : _fmt(_arrival!),
-                    ),
+                    icon: const Icon(Icons.schedule_outlined),
+                    label: Text(_arrival == null ? 'Arrival *' : _fmt(_arrival!)),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(50),
                     ),
@@ -504,9 +453,9 @@ class _FlightFormState extends State<_FlightForm> {
               children: [
                 Expanded(
                   child: TextField(
-                    controller: _duration,
+                    controller: _platform,
                     decoration: const InputDecoration(
-                      labelText: 'Duration',
+                      labelText: 'Platform',
                       border: OutlineInputBorder(),
                     ),
                   ),
@@ -514,14 +463,49 @@ class _FlightFormState extends State<_FlightForm> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: TextField(
-                    controller: _trackerUrl,
+                    controller: _duration,
                     decoration: const InputDecoration(
-                      labelText: 'Tracker URL',
+                      labelText: 'Duration',
                       border: OutlineInputBorder(),
                     ),
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _ticketPrice,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Ticket p.p.',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    controller: _bookingFee,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Booking fee p.p.',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _totalPrice,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Total p.p.',
+                border: OutlineInputBorder(),
+              ),
             ),
             const SizedBox(height: 16),
             Row(

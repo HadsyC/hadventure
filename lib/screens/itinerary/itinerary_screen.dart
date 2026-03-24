@@ -149,10 +149,10 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
       return ItineraryOpenRequest(tabIndex: 3, flightId: item.flightId);
     }
     if (item.trainId != null) {
-      return ItineraryOpenRequest(tabIndex: 3, trainId: item.trainId);
+      return ItineraryOpenRequest(tabIndex: 4, trainId: item.trainId);
     }
     if (item.hotelId != null) {
-      return ItineraryOpenRequest(tabIndex: 4, hotelId: item.hotelId);
+      return ItineraryOpenRequest(tabIndex: 5, hotelId: item.hotelId);
     }
 
     final city = _cities
@@ -203,7 +203,7 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
         db.trains,
       )..where((t) => t.tripId.equals(city.tripId))).get();
       if (allTrains.isEmpty) {
-        return const ItineraryOpenRequest(tabIndex: 3);
+        return const ItineraryOpenRequest(tabIndex: 4);
       }
 
       Train pick = allTrains.first;
@@ -219,7 +219,7 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
         }
       }
 
-      return ItineraryOpenRequest(tabIndex: 3, trainId: pick.id);
+      return ItineraryOpenRequest(tabIndex: 4, trainId: pick.id);
     }
 
     if (isHotel) {
@@ -227,7 +227,7 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
         db.hotels,
       )..where((h) => h.cityId.equals(item.cityId))).get();
       if (cityHotels.isEmpty) {
-        return const ItineraryOpenRequest(tabIndex: 4);
+        return const ItineraryOpenRequest(tabIndex: 5);
       }
 
       final byDate = cityHotels.where((h) {
@@ -261,7 +261,7 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
         }
       }
 
-      return ItineraryOpenRequest(tabIndex: 4, hotelId: pick.id);
+      return ItineraryOpenRequest(tabIndex: 5, hotelId: pick.id);
     }
 
     return null;
@@ -272,7 +272,12 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
     if (req == null || widget.onOpenLinkedView == null) return false;
 
     widget.onOpenLinkedView!(req);
-    final label = req.tabIndex == 4 ? 'Hotels' : 'Flights';
+    final label = switch (req.tabIndex) {
+      3 => 'Flights',
+      4 => 'Trains',
+      5 => 'Hotels',
+      _ => 'Transport',
+    };
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text('Opening $label view...')));
@@ -303,7 +308,9 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                   haystack.contains('check out') ||
                   haystack.contains('checkout'))
               ? 'Hotels'
-              : 'Flights')
+          : ((item.trainId != null || haystack.contains('train'))
+            ? 'Trains'
+            : 'Flights'))
         : null;
 
     showModalBottomSheet(

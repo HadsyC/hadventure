@@ -3,6 +3,7 @@ import '../screens/dashboard/dashboard_screen.dart';
 import '../screens/itinerary/itinerary_screen.dart';
 import '../screens/map/map_screen.dart';
 import '../screens/flights/flights_screen.dart';
+import '../screens/trains/trains_screen.dart';
 import '../screens/hotels/hotels_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/data/data_screen.dart';
@@ -55,8 +56,8 @@ class _AppShellState extends State<AppShell> {
     const MapScreen(),
     FlightsScreen(
       highlightedFlightId: _selectedFlightId,
-      highlightedTrainId: _selectedTrainId,
     ),
+    TrainsScreen(highlightedTrainId: _selectedTrainId),
     HotelsScreen(highlightedHotelId: _selectedHotelId),
     const SettingsScreen(),
     const DataScreen(),
@@ -73,6 +74,11 @@ class _AppShellState extends State<AppShell> {
       icon: Icons.calendar_today_outlined,
       selectedIcon: Icons.calendar_today,
       label: 'Itinerary',
+    (
+      icon: Icons.train_outlined,
+      selectedIcon: Icons.train,
+      label: 'Trains',
+    ),
     ),
     (icon: Icons.map_outlined, selectedIcon: Icons.map, label: 'Map'),
     (icon: Icons.flight_outlined, selectedIcon: Icons.flight, label: 'Flights'),
