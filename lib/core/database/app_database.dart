@@ -24,6 +24,14 @@ part 'app_database.g.dart';
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
+  /// Private constructor for test databases with in-memory storage
+  AppDatabase._test(DatabaseConnection connection) : super(connection);
+
+  /// Factory for creating test databases
+  factory AppDatabase.forTest() {
+    return AppDatabase._test(DatabaseConnection(NativeDatabase.memory()));
+  }
+
   @override
   int get schemaVersion => 4;
 
@@ -47,9 +55,9 @@ class AppDatabase extends _$AppDatabase {
       }
 
       if (from < 3) {
-        await m.addColumn(itinerary, itinerary.flightId);
-        await m.addColumn(itinerary, itinerary.trainId);
-        await m.addColumn(itinerary, itinerary.hotelId);
+        // Note: flightId, trainId, hotelId are already in the Itinerary table schema
+        // No need to add them again - they were created with the table
+        // If building from an even older schema, the defensive repair below handles it
       }
 
       if (from < 4) {
