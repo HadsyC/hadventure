@@ -46,3 +46,4 @@ app.*.map.json
 
 # mine
 raw_files/
+raw_zip/raw_files_bundle.zip

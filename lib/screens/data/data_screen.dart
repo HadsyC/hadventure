@@ -1,10 +1,26 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:csv/csv.dart';
 import 'dart:io';
+import 'package:archive/archive.dart';
 import '../../core/database/app_database.dart';
 import '../../core/database/database_provider.dart';
 import 'package:drift/drift.dart' show Value;
+
+class _ImportPayload {
+  final String tableName;
+  final List<String> headers;
+  final List<List<dynamic>> dataRows;
+  final String sourceName;
+
+  const _ImportPayload({
+    required this.tableName,
+    required this.headers,
+    required this.dataRows,
+    required this.sourceName,
+  });
+}
 
 class DataScreen extends StatefulWidget {
   const DataScreen({super.key});
@@ -17,6 +33,18 @@ class _DataScreenState extends State<DataScreen> {
   bool _isImporting = false;
   String? _lastMessage;
   bool _lastSuccess = false;
+
+  static const _importOrder = [
+    'trips',
+    'cities',
+    'flights',
+    'trains',
+    'hotels',
+    'activities',
+    'trip_tips',
+    'packing_items',
+    'contacts',
+  ];
 
   Future<void> _resetAllData() async {
     final confirmed = await showDialog<bool>(
@@ -110,37 +138,34 @@ class _DataScreenState extends State<DataScreen> {
 
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['csv'],
+      allowedExtensions: ['csv', 'zip'],
     );
     if (result == null || result.files.isEmpty) return;
 
     final file = File(result.files.single.path!);
-    final content = await file.readAsString();
-    final rows = const CsvToListConverter(eol: '\n').convert(content);
+    final ext = result.files.single.extension?.toLowerCase() ?? '';
 
-    if (rows.isEmpty) {
+    if (ext == 'zip') {
+      await _importZipArchive(db, file);
+      return;
+    }
+
+    await _importSingleCsv(db, file);
+  }
+
+  Future<void> _importSingleCsv(AppDatabase db, File file) async {
+    final content = await file.readAsString();
+    final payload = _parseCsvPayload(content, sourceName: file.path);
+
+    if (payload == null) {
       _setMessage('File is empty.', false);
       return;
     }
 
-    final headers = rows.first.map((e) => e.toString()).toList();
-    final dataRows = rows
-        .skip(1)
-        .where((r) => r.any((c) => c.toString().trim().isNotEmpty))
-        .toList();
-    final tableName = _detectTable(headers);
-
-    if (tableName == null) {
-      _setMessage(
-        'Could not detect table type from headers.\nMake sure you are using the Hadventure CSV template.',
-        false,
-      );
-      return;
-    }
-    final missingDep = await _checkDependencies(tableName);
+    final missingDep = await _checkDependencies(payload.tableName);
     if (missingDep != null) {
       _setMessage(
-        'Cannot import $tableName — "$missingDep" must be imported first.',
+        'Cannot import ${payload.tableName} — "$missingDep" must be imported first.',
         false,
       );
       return;
@@ -148,13 +173,12 @@ class _DataScreenState extends State<DataScreen> {
 
     if (!mounted) return;
 
-    // Show preview dialog
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => _ImportPreviewDialog(
-        tableName: tableName,
-        headers: headers,
-        dataRows: dataRows,
+        tableName: payload.tableName,
+        headers: payload.headers,
+        dataRows: payload.dataRows,
       ),
     );
 
@@ -163,9 +187,14 @@ class _DataScreenState extends State<DataScreen> {
     setState(() => _isImporting = true);
 
     try {
-      await _importTable(db, tableName, headers, dataRows);
+      await _importTable(
+        db,
+        payload.tableName,
+        payload.headers,
+        payload.dataRows,
+      );
       _setMessage(
-        'Successfully imported ${dataRows.length} rows into $tableName.',
+        'Successfully imported ${payload.dataRows.length} rows into ${payload.tableName}.',
         true,
       );
     } catch (e) {
@@ -173,6 +202,186 @@ class _DataScreenState extends State<DataScreen> {
     } finally {
       setState(() => _isImporting = false);
     }
+  }
+
+  Future<void> _importZipArchive(AppDatabase db, File file) async {
+    final bytes = await file.readAsBytes();
+    final archive = ZipDecoder().decodeBytes(bytes);
+
+    final byTable = <String, _ImportPayload>{};
+    final ignoredFiles = <String>[];
+
+    for (final entry in archive.files) {
+      if (!entry.isFile) continue;
+
+      final normalizedPath = entry.name.replaceAll('\\', '/').toLowerCase();
+      if (!normalizedPath.endsWith('.csv')) continue;
+
+      final baseName = _baseName(normalizedPath);
+      if (normalizedPath.contains('/templates/') ||
+          baseName.endsWith('_template.csv')) {
+        ignoredFiles.add(entry.name);
+        continue;
+      }
+
+      final rawContent = entry.content;
+      final fileBytes = switch (rawContent) {
+        List<int> v => v,
+        String s => utf8.encode(s),
+        _ => null,
+      };
+      if (fileBytes == null) continue;
+
+      final content = utf8.decode(fileBytes, allowMalformed: true);
+      final payload = _parseCsvPayload(content, sourceName: entry.name);
+      if (payload == null) continue;
+
+      byTable[payload.tableName] = payload;
+    }
+
+    if (byTable.isEmpty) {
+      _setMessage(
+        'No usable CSV files were found in ZIP. Template files are ignored.',
+        false,
+      );
+      return;
+    }
+
+    final planned = byTable.keys.toSet();
+    for (final table in planned) {
+      final missingDep = await _checkDependenciesWithPlanned(table, planned);
+      if (missingDep != null) {
+        _setMessage(
+          'Cannot import $table from ZIP — "$missingDep" must be present in DB or ZIP.',
+          false,
+        );
+        return;
+      }
+    }
+
+    if (!mounted) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => _ZipImportPreviewDialog(
+        importsByTable: byTable,
+        ignoredFiles: ignoredFiles,
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _isImporting = true);
+    try {
+      var totalRows = 0;
+      var totalTables = 0;
+
+      for (final table in _importOrder) {
+        final payload = byTable[table];
+        if (payload == null) continue;
+        await _importTable(db, table, payload.headers, payload.dataRows);
+        totalRows += payload.dataRows.length;
+        totalTables++;
+      }
+
+      _setMessage(
+        'Successfully imported $totalRows rows across $totalTables tables from ZIP.',
+        true,
+      );
+    } catch (e) {
+      _setMessage('ZIP import failed: $e', false);
+    } finally {
+      setState(() => _isImporting = false);
+    }
+  }
+
+  _ImportPayload? _parseCsvPayload(
+    String content, {
+    required String sourceName,
+  }) {
+    final rows = const CsvToListConverter(eol: '\n').convert(content);
+
+    if (rows.isEmpty) {
+      return null;
+    }
+
+    final headers = rows.first.map((e) => e.toString()).toList();
+    final dataRows = rows
+        .skip(1)
+        .where((r) => r.any((c) => c.toString().trim().isNotEmpty))
+        .toList();
+    final tableName =
+        _detectTable(headers) ?? _tableFromFileName(_baseName(sourceName));
+
+    if (tableName == null) {
+      return null;
+    }
+
+    return _ImportPayload(
+      tableName: tableName,
+      headers: headers,
+      dataRows: dataRows,
+      sourceName: sourceName,
+    );
+  }
+
+  Future<String?> _checkDependenciesWithPlanned(
+    String tableName,
+    Set<String> plannedTables,
+  ) async {
+    final db = DatabaseProvider.of(context);
+    final hasTripsInDb = (await db.select(db.trips).get()).isNotEmpty;
+    final hasCitiesInDb = (await db.select(db.cities).get()).isNotEmpty;
+
+    const needsTrip = {
+      'cities',
+      'flights',
+      'trains',
+      'packing_items',
+      'trip_tips',
+      'contacts',
+    };
+    const needsCity = {'hotels', 'activities'};
+
+    if (needsTrip.contains(tableName) &&
+        !hasTripsInDb &&
+        !plannedTables.contains('trips')) {
+      return 'trips';
+    }
+
+    if (needsCity.contains(tableName) &&
+        !hasCitiesInDb &&
+        !plannedTables.contains('cities')) {
+      return 'cities';
+    }
+
+    return null;
+  }
+
+  String _baseName(String path) {
+    final parts = path.split(RegExp(r'[\\/]'));
+    return parts.isEmpty ? path : parts.last;
+  }
+
+  String? _tableFromFileName(String fileName) {
+    final normalized = fileName.toLowerCase().replaceAll('.csv', '');
+    final root = normalized.endsWith('_template')
+        ? normalized.substring(0, normalized.length - '_template'.length)
+        : normalized;
+
+    const supported = {
+      'trips',
+      'cities',
+      'flights',
+      'trains',
+      'hotels',
+      'activities',
+      'trip_tips',
+      'packing_items',
+      'contacts',
+    };
+
+    return supported.contains(root) ? root : null;
   }
 
   Future<void> _importTable(
@@ -556,7 +765,7 @@ class _DataScreenState extends State<DataScreen> {
                         )
                       : const Icon(Icons.upload_file_outlined),
                   label: Text(
-                    _isImporting ? 'Importing...' : 'Import CSV file',
+                    _isImporting ? 'Importing...' : 'Import CSV or ZIP',
                   ),
                   style: FilledButton.styleFrom(
                     minimumSize: const Size.fromHeight(52),
@@ -799,6 +1008,109 @@ class _ImportPreviewDialog extends StatelessWidget {
           onPressed: () => Navigator.pop(context, true),
           icon: const Icon(Icons.upload),
           label: const Text('Import'),
+        ),
+      ],
+    );
+  }
+}
+
+class _ZipImportPreviewDialog extends StatelessWidget {
+  final Map<String, _ImportPayload> importsByTable;
+  final List<String> ignoredFiles;
+
+  const _ZipImportPreviewDialog({
+    required this.importsByTable,
+    required this.ignoredFiles,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final ordered = <String>[
+      'trips',
+      'cities',
+      'flights',
+      'trains',
+      'hotels',
+      'activities',
+      'trip_tips',
+      'packing_items',
+      'contacts',
+    ].where(importsByTable.containsKey).toList();
+
+    final totalRows = ordered
+        .map((t) => importsByTable[t]!.dataRows.length)
+        .fold<int>(0, (a, b) => a + b);
+
+    return AlertDialog(
+      title: Row(
+        children: [
+          Icon(Icons.archive_outlined, color: colorScheme.primary),
+          const SizedBox(width: 8),
+          const Text('Import ZIP Archive'),
+        ],
+      ),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${ordered.length} tables · $totalRows rows detected',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 220),
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: ordered.length,
+                itemBuilder: (_, i) {
+                  final table = ordered[i];
+                  final payload = importsByTable[table]!;
+                  return ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(table),
+                    subtitle: Text(payload.sourceName),
+                    trailing: Text('${payload.dataRows.length} rows'),
+                  );
+                },
+              ),
+            ),
+            if (ignoredFiles.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                '${ignoredFiles.length} template file(s) ignored.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+            const SizedBox(height: 10),
+            Text(
+              'Existing data in each imported table will be replaced.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.error,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton.icon(
+          onPressed: () => Navigator.pop(context, true),
+          icon: const Icon(Icons.upload),
+          label: const Text('Import all'),
         ),
       ],
     );

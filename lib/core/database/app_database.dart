@@ -44,8 +44,33 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(trains, trains.bookingFeePerPerson);
         await m.addColumn(trains, trains.totalPricePerPerson);
       }
+
+      // Some earlier schema v1 databases missed nullable columns despite
+      // version number not changing; repair them defensively.
+      await _repairLegacyColumns(this);
+    },
+    beforeOpen: (details) async {
+      // Run lightweight schema repair on every open to handle legacy local DBs.
+      await _repairLegacyColumns(this);
     },
   );
+}
+
+Future<void> _repairLegacyColumns(AppDatabase db) async {
+  await _addColumnIfMissing(db, 'cities', 'notes', 'TEXT');
+}
+
+Future<void> _addColumnIfMissing(
+  GeneratedDatabase db,
+  String table,
+  String column,
+  String sqlType,
+) async {
+  final tableInfo = await db.customSelect('PRAGMA table_info($table)').get();
+  final exists = tableInfo.any((r) => r.data['name'] == column);
+  if (!exists) {
+    await db.customStatement('ALTER TABLE $table ADD COLUMN $column $sqlType');
+  }
 }
 
 LazyDatabase _openConnection() {
