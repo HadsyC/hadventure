@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:drift/drift.dart' show Value;
+import 'package:hadventure/core/database/queries.dart';
 import '../../core/database/app_database.dart';
 import '../../core/database/database_provider.dart';
 
@@ -343,8 +344,12 @@ class _TrainFormState extends State<_TrainForm> {
       destination: Value(_destination.text.trim()),
       departure: Value(_departure!),
       arrival: Value(_arrival!),
-      platform: Value(_platform.text.trim().isEmpty ? null : _platform.text.trim()),
-      duration: Value(_duration.text.trim().isEmpty ? null : _duration.text.trim()),
+      platform: Value(
+        _platform.text.trim().isEmpty ? null : _platform.text.trim(),
+      ),
+      duration: Value(
+        _duration.text.trim().isEmpty ? null : _duration.text.trim(),
+      ),
       ticketPricePerPerson: Value(double.tryParse(_ticketPrice.text.trim())),
       bookingFeePerPerson: Value(double.tryParse(_bookingFee.text.trim())),
       totalPricePerPerson: Value(double.tryParse(_totalPrice.text.trim())),
@@ -426,9 +431,7 @@ class _TrainFormState extends State<_TrainForm> {
                     onPressed: () => _pickDateTime(isDeparture: true),
                     icon: const Icon(Icons.departure_board_outlined),
                     label: Text(
-                      _departure == null
-                          ? 'Departure *'
-                          : _fmt(_departure!),
+                      _departure == null ? 'Departure *' : _fmt(_departure!),
                     ),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(50),
@@ -440,7 +443,9 @@ class _TrainFormState extends State<_TrainForm> {
                   child: OutlinedButton.icon(
                     onPressed: () => _pickDateTime(isDeparture: false),
                     icon: const Icon(Icons.schedule_outlined),
-                    label: Text(_arrival == null ? 'Arrival *' : _fmt(_arrival!)),
+                    label: Text(
+                      _arrival == null ? 'Arrival *' : _fmt(_arrival!),
+                    ),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(50),
                     ),

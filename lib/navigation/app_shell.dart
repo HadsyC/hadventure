@@ -74,14 +74,10 @@ class _AppShellState extends State<AppShell> {
       icon: Icons.calendar_today_outlined,
       selectedIcon: Icons.calendar_today,
       label: 'Itinerary',
-    (
-      icon: Icons.train_outlined,
-      selectedIcon: Icons.train,
-      label: 'Trains',
-    ),
     ),
     (icon: Icons.map_outlined, selectedIcon: Icons.map, label: 'Map'),
     (icon: Icons.flight_outlined, selectedIcon: Icons.flight, label: 'Flights'),
+    (icon: Icons.train_outlined, selectedIcon: Icons.train, label: 'Trains'),
     (icon: Icons.hotel_outlined, selectedIcon: Icons.hotel, label: 'Hotels'),
     (
       icon: Icons.settings_outlined,

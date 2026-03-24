@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:drift/drift.dart' show Value;
+import 'package:hadventure/core/database/queries.dart';
 import '../../core/database/app_database.dart';
 import '../../core/database/database_provider.dart';
 
