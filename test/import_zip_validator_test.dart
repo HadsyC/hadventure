@@ -18,6 +18,10 @@ void main() {
 
       expect(missing, contains('itinerary'));
       expect(hasAllRequiredZipTables(available), isFalse);
+      expect(
+        missingRequiredZipFilesMessage(missing),
+        equals('ZIP is missing required files: itinerary.csv.'),
+      );
     });
 
     test('passes when all required tables are present', () {
@@ -35,6 +39,23 @@ void main() {
 
       expect(missing, isEmpty);
       expect(hasAllRequiredZipTables(available), isTrue);
+    });
+
+    test('help message text is exact', () {
+      expect(
+        requiredZipFilesHelpMessage(),
+        equals(
+          'ZIP file must contain required CSV files: trips.csv, cities.csv, flights.csv, trains.csv, hotels.csv, itinerary.csv, trip_tips.csv.',
+        ),
+      );
+    });
+
+    test('missing-files message is sorted and exact', () {
+      final msg = missingRequiredZipFilesMessage({'trains', 'cities'});
+      expect(
+        msg,
+        equals('ZIP is missing required files: cities.csv, trains.csv.'),
+      );
     });
   });
 }

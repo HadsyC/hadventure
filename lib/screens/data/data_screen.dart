@@ -187,21 +187,13 @@ class _DataScreenState extends State<DataScreen> {
     }
 
     if (byTable.isEmpty) {
-      _setMessage(
-        'ZIP file must contain required CSV files: trips.csv, cities.csv, flights.csv, trains.csv, hotels.csv, itinerary.csv, trip_tips.csv.',
-        false,
-      );
+      _setMessage(requiredZipFilesHelpMessage(), false);
       return;
     }
 
     final missingRequired = missingRequiredZipTables(byTable.keys);
     if (missingRequired.isNotEmpty) {
-      final missingFiles = missingRequired.map((table) => '$table.csv').toList()
-        ..sort();
-      _setMessage(
-        'ZIP is missing required files: ${missingFiles.join(', ')}.',
-        false,
-      );
+      _setMessage(missingRequiredZipFilesMessage(missingRequired), false);
       return;
     }
 

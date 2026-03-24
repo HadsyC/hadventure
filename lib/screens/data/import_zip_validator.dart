@@ -16,3 +16,13 @@ Set<String> missingRequiredZipTables(Iterable<String> availableTables) {
 bool hasAllRequiredZipTables(Iterable<String> availableTables) {
   return missingRequiredZipTables(availableTables).isEmpty;
 }
+
+String requiredZipFilesHelpMessage() {
+  return 'ZIP file must contain required CSV files: trips.csv, cities.csv, flights.csv, trains.csv, hotels.csv, itinerary.csv, trip_tips.csv.';
+}
+
+String missingRequiredZipFilesMessage(Iterable<String> missingTables) {
+  final missingFiles = missingTables.map((table) => '$table.csv').toList()
+    ..sort();
+  return 'ZIP is missing required files: ${missingFiles.join(', ')}.';
+}
