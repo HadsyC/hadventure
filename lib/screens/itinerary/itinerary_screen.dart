@@ -7,8 +7,14 @@ import '../../core/database/queries.dart';
 class ItineraryScreen extends StatefulWidget {
   final String? filterCity;
   final DateTime? filterDate;
+  final ValueChanged<int>? onOpenTab;
 
-  const ItineraryScreen({super.key, this.filterCity, this.filterDate});
+  const ItineraryScreen({
+    super.key,
+    this.filterCity,
+    this.filterDate,
+    this.onOpenTab,
+  });
 
   @override
   State<ItineraryScreen> createState() => _ItineraryScreenState();
@@ -102,6 +108,87 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
       grouped.putIfAbsent(key, () => []).add(a);
     }
     return grouped;
+  }
+
+  int? _linkedDestinationIndex(Activity item) {
+    final haystack =
+        '${item.activityType ?? ''} ${item.title} ${item.notes ?? ''}'
+            .toLowerCase();
+
+    if (haystack.contains('flight') || haystack.contains('train')) {
+      // Flights tab currently hosts transport entries.
+      return 3;
+    }
+
+    if (haystack.contains('hotel') ||
+        haystack.contains('check in') ||
+        haystack.contains('check-in') ||
+        haystack.contains('check out') ||
+        haystack.contains('checkout')) {
+      return 4;
+    }
+
+    return null;
+  }
+
+  bool _openLinkedDestination(Activity item) {
+    final index = _linkedDestinationIndex(item);
+    if (index == null || widget.onOpenTab == null) return false;
+
+    widget.onOpenTab!(index);
+    final label = index == 4 ? 'Hotels' : 'Flights';
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Opening $label view...')));
+    return true;
+  }
+
+  Widget? _entrySubtitle(Activity item, ColorScheme colorScheme) {
+    final hasType = item.activityType != null && item.activityType!.isNotEmpty;
+    final hasStatus = item.status != null && item.status!.isNotEmpty;
+    final hasNotes = item.notes != null && item.notes!.trim().isNotEmpty;
+
+    if (!hasType && !hasStatus && !hasNotes) return null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (hasType || hasStatus)
+          Row(
+            children: [
+              if (hasType) ...[
+                Icon(
+                  Icons.label_outline,
+                  size: 12,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  item.activityType!,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+              if (hasStatus) ...[
+                const SizedBox(width: 8),
+                _StatusChip(status: item.status!),
+              ],
+            ],
+          ),
+        if (hasNotes) ...[
+          const SizedBox(height: 6),
+          Text(
+            item.notes!.trim(),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
+          ),
+        ],
+      ],
+    );
   }
 
   void _openBottomSheet({Activity? activity}) {
@@ -279,31 +366,7 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                                     ),
                                   ),
                                   title: Text(item.title),
-                                  subtitle: item.activityType != null
-                                      ? Row(
-                                          children: [
-                                            Icon(
-                                              Icons.label_outline,
-                                              size: 12,
-                                              color:
-                                                  colorScheme.onSurfaceVariant,
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              item.activityType!,
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: colorScheme
-                                                    .onSurfaceVariant,
-                                              ),
-                                            ),
-                                            if (item.status != null) ...[
-                                              const SizedBox(width: 8),
-                                              _StatusChip(status: item.status!),
-                                            ],
-                                          ],
-                                        )
-                                      : null,
+                                  subtitle: _entrySubtitle(item, colorScheme),
                                   trailing: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -325,7 +388,11 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                                       ),
                                     ],
                                   ),
-                                  onTap: () => _openBottomSheet(activity: item),
+                                  onTap: () {
+                                    if (!_openLinkedDestination(item)) {
+                                      _openBottomSheet(activity: item);
+                                    }
+                                  },
                                 ),
                                 if (i < entries.length - 1)
                                   Divider(

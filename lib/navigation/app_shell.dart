@@ -29,7 +29,11 @@ class _AppShellState extends State<AppShell> {
 
   List<Widget> get _screens => [
     DashboardScreen(onNavigate: _navigateTo),
-    ItineraryScreen(filterCity: _filterCity, filterDate: _filterDate),
+    ItineraryScreen(
+      filterCity: _filterCity,
+      filterDate: _filterDate,
+      onOpenTab: (index) => _navigateTo(index),
+    ),
     const MapScreen(),
     const FlightsScreen(),
     const HotelsScreen(),
