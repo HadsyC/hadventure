@@ -7,6 +7,73 @@ import '../../core/database/database_provider.dart';
 import '../../core/database/queries.dart';
 import '../../core/widgets/linkify_text.dart';
 
+// ── ITINERARY STATUS & TYPE HELPERS ──────────────────────────────────────────
+
+const _knownStatuses = [
+  'booked',
+  'confirmed',
+  'pending',
+  'no_booking_needed',
+  'decide_on_site',
+];
+
+const _knownActivityTypes = [
+  'Activity',
+  'Accommodation',
+  'Flight',
+  'Train',
+  'Sightseeing',
+  'Restaurant',
+  'Tour',
+  'Free Time',
+  'Event',
+  'Optional',
+  'Shopping',
+  'Other',
+];
+
+/// Normalize status value to canonical lowercase form, defaulting to 'pending' for unknown values.
+String _normalizeStatus(String? status) {
+  final normalized = status?.toLowerCase().trim() ?? 'pending';
+  if (_knownStatuses.contains(normalized)) return normalized;
+  return 'pending';
+}
+
+/// Normalize activity type, defaulting to 'Other' for unknown values.
+String _normalizeActivityType(String? type) {
+  final normalized = type?.trim() ?? 'Other';
+  // Try exact match first
+  if (_knownActivityTypes.contains(normalized)) return normalized;
+  // Try case-insensitive match
+  final lower = normalized.toLowerCase();
+  final match = _knownActivityTypes.firstWhere(
+    (k) => k.toLowerCase() == lower,
+    orElse: () => 'Other',
+  );
+  return match;
+}
+
+/// Get (background color, foreground color) for a status value.
+/// Uses Material colorScheme tokens for consistency with theme.
+(Color, Color) _statusColors(String status, ColorScheme colorScheme) {
+  final normalized = _normalizeStatus(status);
+  final colorMap = {
+    'booked': (colorScheme.primaryContainer, colorScheme.onPrimaryContainer),
+    'confirmed': (colorScheme.primaryContainer, colorScheme.onPrimaryContainer),
+    'pending': (colorScheme.tertiaryContainer, colorScheme.onTertiaryContainer),
+    'no_booking_needed': (
+      colorScheme.surfaceContainerHighest,
+      colorScheme.onSurfaceVariant,
+    ),
+    'decide_on_site': (
+      colorScheme.secondaryContainer,
+      colorScheme.onSecondaryContainer,
+    ),
+  };
+  return colorMap[normalized] ??
+      (colorScheme.surfaceContainerHighest, colorScheme.onSurfaceVariant);
+}
+
 class ItineraryOpenRequest {
   final int tabIndex;
   final int? flightId;
@@ -307,6 +374,7 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
   Future<bool> _openLinkedDestination(ItineraryData item) async {
     final req = await _resolveLinkedRequest(item);
     if (req == null || widget.onOpenLinkedView == null) return false;
+    if (!mounted) return false;
 
     widget.onOpenLinkedView!(req);
     final label = switch (req.tabIndex) {
@@ -369,48 +437,48 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
                       item.title,
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                  IconButton(
-                    tooltip: 'Edit',
-                    icon: const Icon(Icons.edit_outlined),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _openBottomSheet(itinerary: item);
-                    },
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        Chip(
+                          avatar: const Icon(Icons.access_time, size: 16),
+                          label: Text(item.time ?? '--:--'),
+                        ),
+                        if (item.type != null && item.type!.isNotEmpty)
+                          Chip(
+                            avatar: const Icon(Icons.label_outline, size: 16),
+                            label: Text(item.type!),
+                          ),
+                        if (item.status != null && item.status!.isNotEmpty)
+                          _StatusChip(status: item.status!),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  Chip(
-                    avatar: const Icon(Icons.access_time, size: 16),
-                    label: Text(item.time ?? '--:--'),
-                  ),
-                  if (item.type != null && item.type!.isNotEmpty)
-                    ActionChip(
-                      avatar: const Icon(Icons.label_outline, size: 16),
-                      label: Text(item.type!),
-                      onPressed: !canLink
-                          ? null
-                          : () async {
-                              final opened = await _openLinkedDestination(item);
-                              if (opened) Navigator.pop(context);
-                            },
-                    ),
-                  if (item.status != null && item.status!.isNotEmpty)
-                    _StatusChip(status: item.status!),
                   if (item.flightId != null)
                     Chip(
                       avatar: const Icon(Icons.flight_outlined, size: 16),
@@ -426,6 +494,18 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                       avatar: const Icon(Icons.hotel_outlined, size: 16),
                       label: Text('Hotel #${item.hotelId}'),
                     ),
+                  if (item.type != null && item.type!.isNotEmpty)
+                    ActionChip(
+                      avatar: const Icon(Icons.open_in_new, size: 16),
+                      label: const Text('Open linked'),
+                      onPressed: !canLink
+                          ? null
+                          : () async {
+                              final opened = await _openLinkedDestination(item);
+                              if (!mounted) return;
+                              if (opened) Navigator.pop(context);
+                            },
+                    ),
                 ],
               ),
               if (linkedLabel != null) ...[
@@ -433,6 +513,7 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                 OutlinedButton.icon(
                   onPressed: () async {
                     final opened = await _openLinkedDestination(item);
+                    if (!mounted) return;
                     if (opened) Navigator.pop(context);
                   },
                   icon: const Icon(Icons.open_in_new),
@@ -442,14 +523,22 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
               if (item.url != null && item.url!.trim().isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Text(
-                  'Reference',
+                  'Reference Link',
                   style: theme.textTheme.titleSmall?.copyWith(
                     color: colorScheme.primary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 6),
-                LinkifyText(text: item.url!.trim()),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: colorScheme.surfaceContainerLow,
+                  ),
+                  child: LinkifyText(text: item.url!.trim()),
+                ),
               ],
               if (item.mapUrl != null && item.mapUrl!.trim().isNotEmpty) ...[
                 const SizedBox(height: 12),
@@ -461,7 +550,15 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                LinkifyText(text: item.mapUrl!.trim()),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: colorScheme.surfaceContainerLow,
+                  ),
+                  child: LinkifyText(text: item.mapUrl!.trim()),
+                ),
               ],
               const SizedBox(height: 14),
               Text(
@@ -505,6 +602,16 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                     label: const Text('Close'),
                   ),
                   const Spacer(),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      final opened = await _openLinkedDestination(item);
+                      if (!mounted) return;
+                      if (opened) Navigator.pop(context);
+                    },
+                    icon: const Icon(Icons.open_in_new),
+                    label: const Text('Open linked'),
+                  ),
+                  const SizedBox(width: 8),
                   FilledButton.icon(
                     onPressed: () {
                       Navigator.pop(context);
@@ -629,6 +736,7 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
     final colorScheme = theme.colorScheme;
     final grouped = _grouped;
     final sections = grouped.entries.toList();
+    final usePinnedSectionHeaders = MediaQuery.of(context).size.width < 900;
 
     bool isFirstSectionForCity(int sectionIndex, int cityId) {
       for (var i = 0; i < sectionIndex; i++) {
@@ -717,178 +825,262 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
             const SliverFillRemaining(
               child: Center(child: Text('No entries for this filter.')),
             )
-          else
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  final section = sections[index];
-                  final key = section.key;
-                  final entries = section.value;
-                  final cityId = entries.first.cityId;
-                  final cityName = _cities
-                      .where((c) => c.id == cityId)
-                      .map((c) => c.name)
-                      .firstOrNull;
-                  final citySummary = _citySummariesByCityId[cityId];
-                  final showCitySummary =
-                      citySummary != null &&
-                      citySummary.trim().isNotEmpty &&
-                      isFirstSectionForCity(index, cityId);
-                  final summaryExpanded = _expandedCitySummaries.contains(
-                    cityId,
-                  );
+          else ...[
+            ...sections.asMap().entries.expand((entry) {
+              final index = entry.key;
+              final section = entry.value;
+              final key = section.key;
+              final entries = section.value;
+              if (entries.isEmpty) {
+                return <Widget>[
+                  const SliverToBoxAdapter(child: SizedBox.shrink()),
+                ];
+              }
+              final cityId = entries.first.cityId;
+              final cityName = _cities
+                  .where((c) => c.id == cityId)
+                  .map((c) => c.name)
+                  .firstOrNull;
+              final citySummary = _citySummariesByCityId[cityId];
+              final showCitySummary =
+                  citySummary != null &&
+                  citySummary.trim().isNotEmpty &&
+                  isFirstSectionForCity(index, cityId);
+              final summaryExpanded = _expandedCitySummaries.contains(cityId);
 
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (showCitySummary)
-                        Card(
-                          margin: const EdgeInsets.only(top: 8, bottom: 6),
-                          color: colorScheme.surfaceContainerLow,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                InkWell(
-                                  borderRadius: BorderRadius.circular(10),
-                                  onTap: () {
-                                    setState(() {
-                                      if (summaryExpanded) {
-                                        _expandedCitySummaries.remove(cityId);
-                                      } else {
-                                        _expandedCitySummaries.add(cityId);
-                                      }
-                                    });
-                                  },
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 6,
+              final sectionHeader = Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: colorScheme.secondaryContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_month_outlined,
+                      size: 16,
+                      color: colorScheme.onSecondaryContainer,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        key,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: colorScheme.onSecondaryContainer,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '${entries.length} items',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: colorScheme.onSecondaryContainer,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+
+              return <Widget>[
+                SliverMainAxisGroup(
+                  slivers: [
+                    if (showCitySummary)
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+                        sliver: SliverToBoxAdapter(
+                          child: Card(
+                            margin: EdgeInsets.zero,
+                            color: colorScheme.surfaceContainerLow,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  InkWell(
+                                    borderRadius: BorderRadius.circular(10),
+                                    onTap: () {
+                                      setState(() {
+                                        if (summaryExpanded) {
+                                          _expandedCitySummaries.remove(cityId);
+                                        } else {
+                                          _expandedCitySummaries.add(cityId);
+                                        }
+                                      });
+                                    },
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 6,
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              '${cityName ?? 'City'} summary',
+                                              style: theme.textTheme.titleSmall
+                                                  ?.copyWith(
+                                                    fontWeight: FontWeight.w700,
+                                                    color: colorScheme.primary,
+                                                  ),
+                                            ),
+                                          ),
+                                          Icon(
+                                            summaryExpanded
+                                                ? Icons.expand_less
+                                                : Icons.expand_more,
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                    child: Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            '${cityName ?? 'City'} summary',
-                                            style: theme.textTheme.titleSmall
-                                                ?.copyWith(
-                                                  fontWeight: FontWeight.w700,
-                                                  color: colorScheme.primary,
-                                                ),
+                                  ),
+                                  if (summaryExpanded)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 8),
+                                      child: MarkdownBody(
+                                        data: citySummary.trim(),
+                                        selectable: true,
+                                        styleSheet:
+                                            MarkdownStyleSheet.fromTheme(
+                                              theme,
+                                            ).copyWith(
+                                              p: theme.textTheme.bodyMedium,
+                                            ),
+                                        onTapLink: (_, href, _) {
+                                          if (href == null) return;
+                                          _openExternalUrl(href);
+                                        },
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    if (usePinnedSectionHeaders)
+                      SliverPersistentHeader(
+                        pinned: true,
+                        delegate: _StickySectionHeaderDelegate(
+                          minHeight: 52,
+                          maxHeight: 52,
+                          backgroundColor: theme.scaffoldBackgroundColor,
+                          child: sectionHeader,
+                        ),
+                      )
+                    else
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+                        sliver: SliverToBoxAdapter(child: sectionHeader),
+                      ),
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                      sliver: SliverToBoxAdapter(
+                        child: Card(
+                          margin: EdgeInsets.zero,
+                          child: Column(
+                            children: entries.asMap().entries.map((e) {
+                              final i = e.key;
+                              final item = e.value;
+                              return Column(
+                                children: [
+                                  ListTile(
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
+                                    ),
+                                    leading: Container(
+                                      width: 62,
+                                      alignment: Alignment.center,
+                                      decoration: BoxDecoration(
+                                        color: colorScheme.primaryContainer,
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Text(
+                                        item.time ?? '--:--',
+                                        style: TextStyle(
+                                          color: colorScheme.onPrimaryContainer,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                    title: Text(item.title),
+                                    subtitle: _entrySubtitle(item, colorScheme),
+                                    trailing: PopupMenuButton<String>(
+                                      tooltip: 'Entry actions',
+                                      onSelected: (value) {
+                                        if (value == 'view') {
+                                          _openEntryView(item);
+                                        } else if (value == 'edit') {
+                                          _openBottomSheet(itinerary: item);
+                                        } else if (value == 'delete') {
+                                          _deleteItinerary(item);
+                                        }
+                                      },
+                                      itemBuilder: (_) => const [
+                                        PopupMenuItem(
+                                          value: 'view',
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.visibility_outlined),
+                                              SizedBox(width: 8),
+                                              Text('View'),
+                                            ],
                                           ),
                                         ),
-                                        Icon(
-                                          summaryExpanded
-                                              ? Icons.expand_less
-                                              : Icons.expand_more,
+                                        PopupMenuItem(
+                                          value: 'edit',
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.edit_outlined),
+                                              SizedBox(width: 8),
+                                              Text('Edit'),
+                                            ],
+                                          ),
+                                        ),
+                                        PopupMenuItem(
+                                          value: 'delete',
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.delete_outline),
+                                              SizedBox(width: 8),
+                                              Text('Delete'),
+                                            ],
+                                          ),
                                         ),
                                       ],
                                     ),
+                                    onTap: () {
+                                      _openEntryView(item);
+                                    },
                                   ),
-                                ),
-                                if (summaryExpanded)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 8),
-                                    child: MarkdownBody(
-                                      data: citySummary.trim(),
-                                      selectable: true,
-                                      styleSheet: MarkdownStyleSheet.fromTheme(
-                                        theme,
-                                      ).copyWith(p: theme.textTheme.bodyMedium),
-                                      onTapLink: (_, href, _) {
-                                        if (href == null) return;
-                                        _openExternalUrl(href);
-                                      },
+                                  if (i < entries.length - 1)
+                                    Divider(
+                                      height: 1,
+                                      indent: 16,
+                                      endIndent: 16,
+                                      color: colorScheme.outlineVariant,
                                     ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: Text(
-                          key,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.bold,
+                                ],
+                              );
+                            }).toList(),
                           ),
                         ),
                       ),
-                      Card(
-                        margin: EdgeInsets.zero,
-                        child: Column(
-                          children: entries.asMap().entries.map((e) {
-                            final i = e.key;
-                            final item = e.value;
-                            return Column(
-                              children: [
-                                ListTile(
-                                  leading: Text(
-                                    item.time ?? '--:--',
-                                    style: TextStyle(
-                                      color: colorScheme.primary,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                  title: Text(item.title),
-                                  subtitle: _entrySubtitle(item, colorScheme),
-                                  trailing: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      IconButton(
-                                        icon: const Icon(
-                                          Icons.visibility_outlined,
-                                          size: 18,
-                                        ),
-                                        tooltip: 'View',
-                                        onPressed: () => _openEntryView(item),
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(
-                                          Icons.edit_outlined,
-                                          size: 18,
-                                        ),
-                                        onPressed: () =>
-                                            _openBottomSheet(itinerary: item),
-                                      ),
-                                      IconButton(
-                                        icon: Icon(
-                                          Icons.delete_outline,
-                                          size: 18,
-                                          color: colorScheme.error,
-                                        ),
-                                        onPressed: () => _deleteItinerary(item),
-                                      ),
-                                    ],
-                                  ),
-                                  onTap: () {
-                                    _openEntryView(item);
-                                  },
-                                ),
-                                if (i < entries.length - 1)
-                                  Divider(
-                                    height: 1,
-                                    indent: 16,
-                                    endIndent: 16,
-                                    color: colorScheme.outlineVariant,
-                                  ),
-                              ],
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-                  );
-                }, childCount: grouped.length),
-              ),
-            ),
+                    ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 8)),
+                  ],
+                ),
+              ];
+            }),
+            const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          ],
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -900,6 +1092,49 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
   }
 }
 
+class _StickySectionHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final double minHeight;
+  final double maxHeight;
+  final Color backgroundColor;
+  final Widget child;
+
+  const _StickySectionHeaderDelegate({
+    required this.minHeight,
+    required this.maxHeight,
+    required this.backgroundColor,
+    required this.child,
+  }) : assert(minHeight <= maxHeight);
+
+  @override
+  double get minExtent => minHeight;
+
+  @override
+  double get maxExtent => maxHeight;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return ColoredBox(
+      color: backgroundColor,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+        child: child,
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _StickySectionHeaderDelegate oldDelegate) {
+    return oldDelegate.minHeight != minHeight ||
+        oldDelegate.maxHeight != maxHeight ||
+        oldDelegate.backgroundColor != backgroundColor ||
+        oldDelegate.child != child;
+  }
+}
+
 // ── STATUS CHIP ───────────────────────────────────────────────────────────────
 class _StatusChip extends StatelessWidget {
   final String status;
@@ -908,28 +1143,7 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final colors = {
-      'booked': (colorScheme.primaryContainer, colorScheme.onPrimaryContainer),
-      'confirmed': (
-        colorScheme.primaryContainer,
-        colorScheme.onPrimaryContainer,
-      ),
-      'pending': (
-        colorScheme.tertiaryContainer,
-        colorScheme.onTertiaryContainer,
-      ),
-      'decide_on_site': (
-        colorScheme.secondaryContainer,
-        colorScheme.onSecondaryContainer,
-      ),
-      'no_booking_needed': (
-        colorScheme.surfaceContainerHighest,
-        colorScheme.onSurfaceVariant,
-      ),
-    };
-    final (bg, fg) =
-        colors[status] ??
-        (colorScheme.surfaceContainerHighest, colorScheme.onSurfaceVariant);
+    final (bg, fg) = _statusColors(status, colorScheme);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
@@ -975,28 +1189,6 @@ class _ItineraryFormState extends State<_ItineraryForm> {
   String? _selectedType;
   String? _selectedStatus;
 
-  final _activityTypes = [
-    'Activity',
-    'Accommodation',
-    'Flight',
-    'Train',
-    'Sightseeing',
-    'Restaurant',
-    'Tour',
-    'Free Time',
-    'Event',
-    'Optional',
-    'Shopping',
-    'Other',
-  ];
-  final _statuses = [
-    'booked',
-    'confirmed',
-    'pending',
-    'no_booking_needed',
-    'decide_on_site',
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -1010,10 +1202,13 @@ class _ItineraryFormState extends State<_ItineraryForm> {
     _flightId = TextEditingController(text: a?.flightId?.toString() ?? '');
     _trainId = TextEditingController(text: a?.trainId?.toString() ?? '');
     _hotelId = TextEditingController(text: a?.hotelId?.toString() ?? '');
+
+    // Normalize imported status/type values to prevent dropdown crashes
+    // when editing entries with values not in the known lists
     _selectedCityId = a?.cityId ?? widget.cities.firstOrNull?.id;
     _selectedDate = a?.date ?? DateTime.now();
-    _selectedType = a?.type ?? 'Activity';
-    _selectedStatus = a?.status ?? 'pending';
+    _selectedType = _normalizeActivityType(a?.type);
+    _selectedStatus = _normalizeStatus(a?.status);
   }
 
   @override
@@ -1041,12 +1236,31 @@ class _ItineraryFormState extends State<_ItineraryForm> {
   }
 
   Future<void> _save() async {
-    if (_title.text.trim().isEmpty) return;
-    if (widget.cities.isEmpty) return;
+    // Validation: title is required
+    if (_title.text.trim().isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Title is required')));
+      }
+      return;
+    }
+
+    // Validation: city is required
+    if (widget.cities.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Add a city first')));
+      }
+      return;
+    }
 
     final cityId = _selectedCityId ?? widget.cities.first.id;
     final db = DatabaseProvider.of(context);
-    final companion = ItineraryCompanion(
+
+    // Build the companion with all form fields
+    var companion = ItineraryCompanion(
       cityId: Value(cityId),
       date: Value(_selectedDate ?? DateTime.now()),
       time: Value(_time.text.trim().isEmpty ? null : _time.text.trim()),
@@ -1065,12 +1279,30 @@ class _ItineraryFormState extends State<_ItineraryForm> {
     );
 
     if (widget.itinerary == null) {
+      // Create new: simple insert with form data
       await db.into(db.itinerary).insert(companion);
     } else {
+      // Edit: preserve existing mapped fields (mapUrl, addressEn, addressLocal, lat, lng, etc.)
+      // that may have come from imports and aren't in the form UI
+      final existing = widget.itinerary!;
+      companion = companion.copyWith(
+        mapUrl: Value(existing.mapUrl),
+        addressEn: Value(existing.addressEn),
+        addressLocal: Value(existing.addressLocal),
+        lat: Value(existing.lat),
+        lng: Value(existing.lng),
+        duration: Value(existing.duration),
+        availability: Value(existing.availability),
+        currency: Value(existing.currency),
+        bookedAt: Value(existing.bookedAt),
+        image: Value(existing.image),
+      );
+
       await (db.update(
         db.itinerary,
       )..where((a) => a.id.equals(widget.itinerary!.id))).write(companion);
     }
+
     if (mounted) {
       Navigator.pop(context);
       widget.onSaved();
@@ -1113,207 +1345,218 @@ class _ItineraryFormState extends State<_ItineraryForm> {
               ),
             ),
             const SizedBox(height: 20),
-
-            // City
-            DropdownButtonFormField<int>(
-              initialValue: _selectedCityId,
-              decoration: const InputDecoration(
-                labelText: 'City',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.location_city_outlined),
-              ),
-              items: widget.cities
-                  .map(
-                    (c) => DropdownMenuItem(value: c.id, child: Text(c.name)),
-                  )
-                  .toList(),
-              onChanged: (v) => setState(() => _selectedCityId = v),
-            ),
-            const SizedBox(height: 12),
-
-            // Date
-            OutlinedButton.icon(
-              onPressed: _pickDate,
-              icon: const Icon(Icons.calendar_today_outlined),
-              label: Text(
-                _selectedDate != null
-                    ? _formatDate(_selectedDate!)
-                    : 'Pick a date',
-              ),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(52),
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // Time + Title
-            Row(
-              children: [
-                SizedBox(
-                  width: 100,
-                  child: TextField(
-                    controller: _time,
+            _FormSection(
+              title: 'Core details',
+              icon: Icons.event_note_outlined,
+              child: Column(
+                children: [
+                  DropdownButtonFormField<int>(
+                    initialValue: _selectedCityId,
                     decoration: const InputDecoration(
-                      labelText: 'Time',
+                      labelText: 'City',
                       border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.access_time),
-                      hintText: '09:00',
+                      prefixIcon: Icon(Icons.location_city_outlined),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    controller: _title,
-                    decoration: const InputDecoration(
-                      labelText: 'Title *',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.title),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            // Type + Status
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _selectedType,
-                    decoration: const InputDecoration(
-                      labelText: 'Type',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.label_outline),
-                    ),
-                    items: _activityTypes
-                        .map((t) => DropdownMenuItem(value: t, child: Text(t)))
-                        .toList(),
-                    onChanged: (v) => setState(() => _selectedType = v),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _selectedStatus,
-                    decoration: const InputDecoration(
-                      labelText: 'Status',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.check_circle_outline),
-                    ),
-                    items: _statuses
+                    items: widget.cities
                         .map(
-                          (s) => DropdownMenuItem(
-                            value: s,
-                            child: Text(s.replaceAll('_', ' ')),
+                          (c) => DropdownMenuItem(
+                            value: c.id,
+                            child: Text(c.name),
                           ),
                         )
                         .toList(),
-                    onChanged: (v) => setState(() => _selectedStatus = v),
+                    onChanged: (v) => setState(() => _selectedCityId = v),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            // Location
-            TextField(
-              controller: _location,
-              decoration: const InputDecoration(
-                labelText: 'Location',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.location_on_outlined),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: _pickDate,
+                    icon: const Icon(Icons.calendar_today_outlined),
+                    label: Text(
+                      _selectedDate != null
+                          ? _formatDate(_selectedDate!)
+                          : 'Pick a date',
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(52),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      SizedBox(
+                        width: 100,
+                        child: TextField(
+                          controller: _time,
+                          decoration: const InputDecoration(
+                            labelText: 'Time',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.access_time),
+                            hintText: '09:00',
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextField(
+                          controller: _title,
+                          decoration: const InputDecoration(
+                            labelText: 'Title *',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.title),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          initialValue: _selectedType,
+                          decoration: const InputDecoration(
+                            labelText: 'Type',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.label_outline),
+                          ),
+                          items: _knownActivityTypes
+                              .map(
+                                (t) =>
+                                    DropdownMenuItem(value: t, child: Text(t)),
+                              )
+                              .toList(),
+                          onChanged: (v) => setState(() => _selectedType = v),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          initialValue: _selectedStatus,
+                          decoration: const InputDecoration(
+                            labelText: 'Status',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.check_circle_outline),
+                          ),
+                          items: _knownStatuses
+                              .map(
+                                (s) => DropdownMenuItem(
+                                  value: s,
+                                  child: _StatusChip(status: s),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (v) => setState(() => _selectedStatus = v),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 12),
 
-            // Notes
-            TextField(
-              controller: _notes,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                labelText: 'Notes',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.notes),
-                alignLabelWithHint: true,
+            _FormSection(
+              title: 'Context and booking',
+              icon: Icons.description_outlined,
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _location,
+                    decoration: const InputDecoration(
+                      labelText: 'Location',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.location_on_outlined),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _notes,
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                      labelText: 'Notes',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.notes),
+                      alignLabelWithHint: true,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: TextField(
+                          controller: _url,
+                          decoration: const InputDecoration(
+                            labelText: 'URL',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.link),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextField(
+                          controller: _price,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Price (€)',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.euro),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 12),
 
-            // URL + Price
-            Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: TextField(
-                    controller: _url,
-                    decoration: const InputDecoration(
-                      labelText: 'URL',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.link),
-                    ),
+            _FormSection(
+              title: 'Linked records',
+              icon: Icons.link_outlined,
+              subtitle:
+                  'Optional IDs used for quick jumps to Flights/Trains/Hotels.',
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _flightId,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Flight ID',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.flight_outlined),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextField(
+                          controller: _trainId,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Train ID',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.train_outlined),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    controller: _price,
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _hotelId,
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
-                      labelText: 'Price (€)',
+                      labelText: 'Hotel ID',
                       border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.euro),
+                      prefixIcon: Icon(Icons.hotel_outlined),
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            Text(
-              'Linked records (optional IDs)',
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: colorScheme.primary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _flightId,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Flight ID',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.flight_outlined),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    controller: _trainId,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Train ID',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.train_outlined),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _hotelId,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Hotel ID',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.hotel_outlined),
+                ],
               ),
             ),
             const SizedBox(height: 20),
@@ -1336,6 +1579,63 @@ class _ItineraryFormState extends State<_ItineraryForm> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _FormSection extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final String? subtitle;
+  final Widget child;
+
+  const _FormSection({
+    required this.title,
+    required this.icon,
+    this.subtitle,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 18, color: colorScheme.primary),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          if (subtitle != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              subtitle!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
+          child,
+        ],
       ),
     );
   }

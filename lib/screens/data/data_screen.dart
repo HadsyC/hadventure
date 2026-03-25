@@ -60,6 +60,7 @@ class _DataScreenState extends State<DataScreen> {
     );
 
     if (confirmed != true) return;
+    if (!mounted) return;
 
     final db = DatabaseProvider.of(context);
     await db.delete(db.itinerary).go();

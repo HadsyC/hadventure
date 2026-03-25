@@ -47,6 +47,12 @@ void main() {
       expect(itineraryPayload.headers, contains('city_name'));
       expect(itineraryPayload.headers, contains('title'));
       expect(itineraryPayload.headers, contains('date'));
+
+      final hotelsPayload = parsed.byTable['hotels'];
+      expect(hotelsPayload, isNotNull);
+      expect(hotelsPayload!.dataRows.length, greaterThan(0));
+      expect(hotelsPayload.headers, contains('city_name'));
+      expect(hotelsPayload.headers, contains('name'));
     });
 
     test('step 2: validates required-table contract before import', () async {
@@ -69,6 +75,11 @@ void main() {
           (s) => s.tableName == 'itinerary',
         );
         expect(itinerarySummary.insertedRows, greaterThan(0));
+
+        final hotelsSummary = result.tableSummaries.firstWhere(
+          (s) => s.tableName == 'hotels',
+        );
+        expect(hotelsSummary.insertedRows, greaterThan(0));
       },
     );
 

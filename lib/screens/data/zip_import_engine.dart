@@ -896,8 +896,10 @@ class ZipImportEngine {
         .skip(1)
         .where((r) => r.any((c) => c.toString().trim().isNotEmpty))
         .toList();
+    // Prefer canonical filename mapping to avoid header-overlap collisions
+    // (for example locations.csv also containing name/city_name/address_en).
     final tableName =
-        _detectTable(headers) ?? _tableFromFileName(_baseName(sourceName));
+        _tableFromFileName(_baseName(sourceName)) ?? _detectTable(headers);
 
     if (tableName == null) return null;
 
